@@ -21,7 +21,7 @@
 from pyalgotrade.barfeed import common
 from pyalgotrade import bar
 from pyalgotrade.barfeed import membf
-
+import datetime
 
 class Feed(membf.BarFeed):
     """Class for json data
@@ -40,13 +40,20 @@ class Feed(membf.BarFeed):
         self.__barClass = bar.BasicBar
         self.__frequency = frequency
 
+    def __parseDate(self, dateString):
+        year = int(dateString[0:4])
+        month = int(dateString[4:6])
+        day = int(dateString[6:8])
+        ret = datetime.datetime(year, month, day)
+        return ret
+
     def barsHaveAdjClose(self):
         return True
 
     def addBarsFromJson(self, instrument, jsondata):
         loadedBars = []
         for it in jsondata:
-            dateTime = float(it[0])
+            dateTime = self.__parseDate(it[0])
             open_ = float(it[1])
             high = float(it[2])
             low = float(it[3])
