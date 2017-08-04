@@ -2,8 +2,7 @@ from pyalgotrade import strategy
 from pyalgotrade.barfeed import yahoofeed
 from pyalgotrade.technical import ma
 
-
-class MyStrategy(strategy.BacktestingStrategy):
+class MySimpleStrategy(strategy.BacktestingStrategy):
     def __init__(self, feed, instrument, smaPeriod):
         super(MyStrategy, self).__init__(feed, 1000)
         self.__position = None
@@ -50,8 +49,8 @@ def run_strategy(smaPeriod):
     feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
     # Evaluate the strategy with the feed.
-    myStrategy = MyStrategy(feed, "orcl", smaPeriod)
-    myStrategy.run()
+    mySimpleStrategy = MySimpleStrategy(feed, "orcl", smaPeriod)
+    mySimpleStrategy.run()
     print "Final portfolio value: $%.2f" % myStrategy.getBroker().getEquity()
 for i in range(10, 30):
     run_strategy(i)

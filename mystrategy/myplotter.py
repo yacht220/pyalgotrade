@@ -1,7 +1,7 @@
 from pyalgotrade import plotter
 #from pyalgotrade.barfeed import yahoofeed
 from pyalgotrade.stratanalyzer import returns
-import sma_crossover
+import mysmacrossover
 import myfeed
 import huobiapi
 
@@ -10,14 +10,14 @@ import huobiapi
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.DataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '100')
+kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '100', 300)
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson("btc", kline)
 
 
 # Evaluate the strategy with the feed's bars.
-myStrategy = sma_crossover.SMACrossOver(feed, "btc", 20)
+myStrategy = mysmacrossover.MySMACrossOver(feed, "btc", 20)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()
