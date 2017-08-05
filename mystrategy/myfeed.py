@@ -44,7 +44,9 @@ class Feed(membf.BarFeed):
         year = int(dateString[0:4])
         month = int(dateString[4:6])
         day = int(dateString[6:8])
-        ret = datetime.datetime(year, month, day)
+        hour = int(dateString[8:10])
+        minute = int(dateString[10:12])
+        ret = datetime.datetime(year, month, day, hour, minute)
         return ret
 
     def barsHaveAdjClose(self):

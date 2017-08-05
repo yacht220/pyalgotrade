@@ -1,56 +1,57 @@
 from pyalgotrade import strategy
 from pyalgotrade.barfeed import yahoofeed
 from pyalgotrade.technical import ma
+import mybasestrategy
+import myfeed
+import huobiapi
 
-class MySimpleStrategy(strategy.BacktestingStrategy):
+class MySimpleStrategy(mybasestrategy.MyBaseStrategy):
     def __init__(self, feed, instrument, smaPeriod):
-        super(MyStrategy, self).__init__(feed, 1000)
+        super(MySimpleStrategy, self).__init__(feed, 1000000)
         self.__position = None
         self.__instrument = instrument
         # We'll use adjusted close values instead of regular close values.
         self.setUseAdjustedValues(False)
         self.__sma = ma.SMA(feed[instrument].getPriceDataSeries(), smaPeriod)
 
-    def onEnterOk(self, position):
-        execInfo = position.getEntryOrder().getExecutionInfo()
-        self.info("BUY at $%.2f" % (execInfo.getPrice()))
+    def setPosition(self, position):
+        self.__position = position
 
-    def onEnterCanceled(self, position):
-        self.__position = None
+    def getPosition(self):
+        return self.__position
 
-    def onExitOk(self, position):
-        execInfo = position.getExitOrder().getExecutionInfo()
-        self.info("SELL at $%.2f" % (execInfo.getPrice()))
-        self.__position = None
+    def enterLongSignal(self, bar):
+        return bar.getPrice() > self.__sma[-1]
 
-    def onExitCanceled(self, position):
-        # If the exit was canceled, re-submit it.
-        self.__position.exitMarket()
+    def exitLongSignal(self, bar):
+        return bar.getPrice() < self.__sma[-1] and not self.__position.exitActive()
 
     def onBars(self, bars):
         # Wait for enough bars to be available to calculate a SMA.
         if self.__sma[-1] is None:
-            return
+            return 
 
         bar = bars[self.__instrument]
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
-            if bar.getPrice() > self.__sma[-1]:
+            if self.enterLongSignal(bar):
                 # Enter a buy market order for 10 shares. The order is good till canceled.
                 self.__position = self.enterLong(self.__instrument, 10, True)
         # Check if we have to exit the position.
-        elif bar.getPrice() < self.__sma[-1] and not self.__position.exitActive():
+        elif self.exitLongSignal(bar):
             self.__position.exitMarket()
 
-
 def run_strategy(smaPeriod):
-    # Load the yahoo feed from the CSV file
-    feed = yahoofeed.Feed()
-    feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
+    # Load the huobi feed as json
+    huobi = huobiapi.DataApi()
+    kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '100', 300)
+    feed = myfeed.Feed()
+    feed.addBarsFromJson("btc", kline)
 
     # Evaluate the strategy with the feed.
-    mySimpleStrategy = MySimpleStrategy(feed, "orcl", smaPeriod)
+    mySimpleStrategy = MySimpleStrategy(feed, "btc", smaPeriod)
     mySimpleStrategy.run()
-    print "Final portfolio value: $%.2f" % myStrategy.getBroker().getEquity()
+    print "Final portfolio value: $%.2f" % mySimpleStrategy.getBroker().getEquity()
+
 for i in range(10, 30):
     run_strategy(i)

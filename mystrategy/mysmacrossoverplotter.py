@@ -10,14 +10,13 @@ import huobiapi
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.DataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '100', 300)
+kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '060', 300)
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson("btc", kline)
 
-
 # Evaluate the strategy with the feed's bars.
-myStrategy = mysmacrossover.MySMACrossOver(feed, "btc", 20)
+myStrategy = mysmacrossover.MySMACrossOver(feed, "btc", 30)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()
