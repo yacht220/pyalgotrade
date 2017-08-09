@@ -2,6 +2,7 @@ from pyalgotrade import strategy
 from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
 import mybroker
+import pdb
 
 class MyBaseStrategy(strategy.BacktestingStrategy):
 	def __init__(self, feed, broker, instrument, signal, smaPeriodFast, smaPeriodSlow = None):
@@ -25,7 +26,7 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 	def getSMASlow(self):
 		return self.__smaSlow
 
-	def onEnterOk(self, position):        
+	def onEnterOk(self, position):
 		execInfo = position.getEntryOrder().getExecutionInfo()
 		self.info("BUY at $%.2f" % (execInfo.getPrice()))
 

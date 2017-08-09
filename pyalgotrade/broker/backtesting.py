@@ -24,6 +24,7 @@ from pyalgotrade import broker
 from pyalgotrade.broker import fillstrategy
 from pyalgotrade import logger
 import pyalgotrade.bar
+import pdb
 
 
 ######################################################################

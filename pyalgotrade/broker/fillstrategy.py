@@ -23,6 +23,7 @@ import abc
 from pyalgotrade import broker
 import pyalgotrade.bar
 import slippage
+import pdb
 
 
 # Returns the trigger price for a Limit or StopLimit order, or None if the limit price was not yet penetrated.

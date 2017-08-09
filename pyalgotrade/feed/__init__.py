@@ -22,6 +22,7 @@ import abc
 
 from pyalgotrade import observer
 from pyalgotrade import dataseries
+import pdb
 
 
 def feed_iterator(feed):
@@ -103,6 +104,7 @@ class BaseFeed(observer.Subject):
         return self.__event
 
     def dispatch(self):
+        #pdb.set_trace()
         dateTime, values = self.getNextValuesAndUpdateDS()
         if dateTime is not None:
             self.__event.emit(dateTime, values)

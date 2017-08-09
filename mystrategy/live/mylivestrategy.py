@@ -1,5 +1,5 @@
-from pyalgotrade.bitstamp import barfeed
-from pyalgotrade.bitstamp import broker
+from mystrategy.live import mylivefeed
+from mystrategy.live import mylivebroker
 from pyalgotrade import strategy
 from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
@@ -13,8 +13,8 @@ class Strategy(strategy.BaseStrategy):
         smaPeriodSlow = 7
         self.__instrument = "BTC"
         self.__prices = feed[self.__instrument].getCloseDataSeries()
-        self.__smafast = ma.EMA(self.__prices, smaPeriodFast)
-        self.__smaslow = ma.EMA(self.__prices, smaPeriodSlow)
+        self.__smafast = ma.SMA(self.__prices, smaPeriodFast)
+        self.__smaslow = ma.SMA(self.__prices, smaPeriodSlow)
         self.__bid = None
         self.__ask = None
         self.__position = None
@@ -24,16 +24,16 @@ class Strategy(strategy.BaseStrategy):
         self.__cash = 1000
 
         # Subscribe to order book update events to get bid/ask prices to trade.
-        feed.getOrderBookUpdateEvent().subscribe(self.__onOrderBookUpdate)
+        #feed.getOrderBookUpdateEvent().subscribe(self.__onOrderBookUpdate)
 
-    def __onOrderBookUpdate(self, orderBookUpdate):
+    '''def __onOrderBookUpdate(self, orderBookUpdate):
         bid = orderBookUpdate.getBidPrices()[0]
         ask = orderBookUpdate.getAskPrices()[0]
 
         if bid != self.__bid or ask != self.__ask:
             self.__bid = bid
             self.__ask = ask
-            #self.info("Order book updated. Best bid: %s. Best ask: %s" % (self.__bid, self.__ask))
+            #self.info("Order book updated. Best bid: %s. Best ask: %s" % (self.__bid, self.__ask))'''
 
     def onEnterOk(self, position):
         self.__buyPrice = position.getEntryOrder().getExecutionInfo().getPrice()
@@ -57,11 +57,19 @@ class Strategy(strategy.BaseStrategy):
         self.__position.exitLimit(self.__bid)
 
     def onBars(self, bars):
+        #pdb.set_trace()
         bar = bars[self.__instrument]
-        #self.info("Price: %s. Volume: %s." % (bar.getClose(), bar.getVolume()))
+        self.info("Time: %s. Price: %s. Volume: %s." % (bar.getDateTime(), bar.getClose(), bar.getVolume()))
+        for i in self.__prices:
+            print "prices %s" % i
 
+        for j in self.__smafast:
+            print "smafast %s" % j
+
+        for k in self.__smaslow:
+            print "smaslow %s" % k
         # Wait until we get the current bid/ask prices.
-        if self.__ask is None:
+        '''if self.__ask is None:
             return
 
         # If a position was not opened, check if we should enter a long position.
@@ -74,11 +82,11 @@ class Strategy(strategy.BaseStrategy):
         elif not self.__position.exitActive() and cross.cross_below(self.__smafast, self.__smaslow) > 0:
             self.info("Exit signal. Sell at %s" % (self.__bid))
             self.__position.exitLimit(self.__bid)
-            #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))
+            #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))'''
 
 def main():
-    barFeed = barfeed.LiveTradeFeed()
-    brk = broker.PaperTradingBroker(1000, barFeed)
+    barFeed = mylivefeed.LiveTradeFeed()
+    brk = mylivebroker.PaperTradingBroker(1000, barFeed)
     strat = Strategy(barFeed, brk)
     
     strat.run()

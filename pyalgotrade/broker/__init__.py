@@ -22,6 +22,7 @@ import abc
 
 from pyalgotrade import observer
 from pyalgotrade import dispatchprio
+import pdb
 
 
 # This class is used to prevent bugs like the one triggered in testcases.bitstamp_test:TestCase.testRoundingBug.
