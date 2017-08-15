@@ -1,5 +1,7 @@
 import json
 import requests
+import time
+from datetime import datetime
 
 SYMBOL_BTCCNY = 'BTC_CNY'
 SYMBOL_LTCCNY = 'LTC_CNY'
@@ -29,3 +31,22 @@ class DataApi(object):
         except Exception, e:
             print e
             return None
+
+class TradeApi(object):x
+    def __init__(self):
+        self.__requestQuantityTmp = None
+        self.__requestPriceTmp = None
+        self.__dateTime = None
+        self.__data = DataApi()
+ 
+    def getOrderInfo(self, id_):
+        ret = {'id':1234, 'type':3, 'order_price':self.__requestPriceTmp, 'order_quantity'}
+
+    def buyMarket(self, quantity):
+        curBar = self.__data.getKline(SYMBOL_BTCCNY, '001', 1)
+        self.__requestPriceTmp = float(curBar[0][4])
+        self.__requestQuantityTmp = quantity
+        self.__dateTime = datetime.fromtimestamp(time.time())
+        ret = {'result':'success', 'id':1234}
+        return self.__dateTime, ret
+

@@ -27,6 +27,7 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		return self.__smaSlow
 
 	def onEnterOk(self, position):
+		#pdb.set_trace()
 		execInfo = position.getEntryOrder().getExecutionInfo()
 		self.info("BUY at $%.2f" % (execInfo.getPrice()))
 

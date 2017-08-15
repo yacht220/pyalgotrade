@@ -113,7 +113,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     QUEUE_TIMEOUT = 0.01
 
     def __init__(self, maxLen=None):
-        super(LiveTradeFeed, self).__init__(bar.Frequency.TRADE, maxLen)
+        super(LiveTradeFeed, self).__init__(bar.Frequency.MINUTE, maxLen)
         self.__barDicts = []
         self.registerInstrument(common.btc_symbol)
         self.__prevTradeDateTime = None
@@ -122,7 +122,6 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__enableReconnection = True
         self.__stopped = False
         self.__orderBookUpdateEvent = observer.Event()
-        self.__isFirst = True
 
     # Factory method for testing purposes.
     def buildWebSocketClientThread(self):
@@ -193,18 +192,22 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
             pass
         return ret'''
 
-        if not self.__isFirst:
-            time.sleep(5)
-        else:
-            self.__isFirst = False
         huobi = huobiapi.DataApi()
 
-        while True:
+        '''while True:
             bar = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '001', 1)
             assert(len(bar) == 1)
             datetime = self.__getTradeDateTime(bar[0][0])
             if (datetime != self.__prevTradeDateTime):
                 break
+            time.sleep(5)'''
+
+        bar = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '001', 1)
+        assert(len(bar) == 1)
+        datetime = self.__getTradeDateTime(bar[0][0])
+        if (datetime == self.__prevTradeDateTime):
+                #time.sleep(1)
+                return False
 
         barDict = {
             common.btc_symbol: TradeBar(datetime, bar[0])
@@ -212,9 +215,9 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__prevTradeDateTime = datetime
         self.__barDicts.append(barDict)
 
-        print "LiveTradeFeed.__dispatchImpl:"
+        common.logger.info("LiveTradeFeed.__dispatchImpl:")
         for tb in self.__barDicts:
-            print tb["BTC"].getDateTime(), tb["BTC"].getClose()
+            common.logger.info("%s, %s" % (tb["BTC"].getDateTime(), tb["BTC"].getClose()))
 
         #pdb.set_trace()
         return True

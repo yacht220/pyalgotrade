@@ -1,123 +1,244 @@
-# PyAlgoTrade
-#
-# Copyright 2011-2015 Gabriel Martin Becedillas Ruiz
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""
-.. moduleauthor:: Gabriel Martin Becedillas Ruiz <gabriel.becedillas@gmail.com>
-"""
-
-
 from pyalgotrade import broker
-from pyalgotrade.broker import backtesting
-from pyalgotrade.bitstamp import common
-from pyalgotrade.bitstamp import livebroker
+from mystrategy.huobi import huobiapi
+from mystrategy import mylogger
+
+class MyInstrumentTraits(broker.InstrumentTraits):
+	def roundQuantity(self, quantity):
+		return float(quantity)
+
+class MyOrder(object):
+	def __init__(self):
+		self.__id = None
+		self.__type = None
+		self.__requestPrice = None, 
+		self.__requestQuantity = None, 
+		self.__filledPrice = None, 
+		self.__filledQuantity = None
+		self.__vot = None
+		self.__fee = None
+		self.__total = None 
+		self.__status = None
+		self.__dateTime = None
+
+	def setId(self, id_):
+		self.__id = id_
+
+	def getId(self):
+		return self.__id
+
+	def setType(self, type_):
+		self.__type = type_
+
+	def getType(self):
+		return self.__type
+
+	def setRequestPrice(self, requestPrice):
+		self.__requestPrice = requestPrice
+
+	def getRequestPrice(self):
+        return self.__requestPrice
+
+    def setRequestQuantity(self, requestQuantity):
+        self.__requestQuantity = requestQuantity
+
+    def getRequestQuantity(self):
+        return self.__requestQuantity
+
+    def setFilledPrice(self, filledPrice):
+        self.__filledPrice = filledQuantity
+
+    def getFilledPrice(self):
+        return self.__filledQuantity
+
+    def setFilledQuantity(self, filledQuantity):
+        self.__filledQuantity = filledQuantity
+
+    def getFilledQuantity(self):
+        return self.__filledQuantity
+
+    def setVot(self, vot):
+        self.__vot = vot
+
+    def getVot(self):
+        return self.__vot
+
+    def setFee(self, fee):
+        self.__fee = fee
+
+	def getFee(self):
+		return self.__fee
+
+    def setTotal(self, total):
+        self.__total = total
+
+    def getTotal(self):
+        return self.__total
+
+    def setStatus(self, status):
+        self.__status = status
+
+    def getStatus(self):
+        return self.__status
+
+	def setDateTime(self, time):
+		self.__dateTime = time
+
+    def getDateTime(self):
+        return self.__dateTime    
+
+class MyLiveBroker(broker.Broker):
+	def __init__(self):
+		super(MyLiveBroker, self).__init__()
+		self.__huobi = huobiapi.TradeApi()
+		self.__stop = False
+		self.__activeOrders = {}
+		self.__cash = 0
+		self.__shares = {}
 
 
-LiveBroker = livebroker.LiveBroker
+	def _registerOrder(self, order):
+		assert(order.getId() not in self.__activeOrders)
+        assert(order.getId() is not None)
+        self.__activeOrders[order.getId()] = order
 
-# In a backtesting or paper-trading scenario the BacktestingBroker dispatches events while processing events from the
-# BarFeed.
-# It is guaranteed to process BarFeed events before the strategy because it connects to BarFeed events before the
-# strategy.
+    def _unregisterOrder(self, order):
+        assert(order.getId() in self.__activeOrders)
+        assert(order.getId() is not None)
+        del self.__activeOrders[order.getId()]
 
+    def _orderStatusUpdate(self, orders):
+    	for order in orders:
+    		huobiOrder = self._getOrderInfo(order.getId())
+    		fee = huobiOrder.getFee()
+    		filledPrice = huobiOrder.getFilledPrice()
+    		filledQuantity = huobiOrder.getFilledQuantity()
+    		dateTime = huobiOrder.getDateTime()
 
-class BacktestingBroker(backtesting.Broker):
-    MIN_TRADE_USD = 5
+    		orderExecutionInfo = broker.OrderExecutionInfo(filledPrice, abs(filledQuantity), fee, dateTime)
+    		order.addExecutionInfo(orderExecutionInfo)
+    		if not order.isActive()
+    			self._unregisterOrder(order)
 
-    """A Bitstamp backtesting broker.
+    		if order.isFilled():
+    			eventType = broker.OrderEvent.Type.FILLED
+    		else:
+    			eventType = broker.OrderEvent.Type.PARTIALLY_FILLED
+    		self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
 
-    :param cash: The initial amount of cash.
-    :type cash: int/float.
-    :param barFeed: The bar feed that will provide the bars.
-    :type barFeed: :class:`pyalgotrade.barfeed.BarFeed`
-    :param fee: The fee percentage for each order. Defaults to 0.25%.
-    :type fee: float.
+    def _getOrderInfo(self, id_):
+    	timestamp, jsonData = self.__huobi.getOrderInfo(id_)
+    	order = MyOrder()
+    	order.setId(int(jsonData['id']))
+    	order.setType(int(jsonData['type']))
+    	order.setRequestPrice(float(jsonData['order_price']))
+    	order.setRequestQuantity(float(jsonData['order_quantity']))
+    	order.setFilledPrice(float(jsonData['processed_price']))
+    	order.setFilledQuantity(float(jsonData['processed_amount']))
+    	order.setVot(float(jsonData['vot']))
+ 		order.setFee(float(jsonData['fee']))
+ 		order.setTotal(float(jsonData['total']))
+ 		order.setStatus(int(jsonData['status']))
+    	order.setDateTime(timestamp)
+    	return order
 
-    .. note::
-        * Only limit orders are supported.
-        * Orders are automatically set as **goodTillCanceled=True** and  **allOrNone=False**.
-        * BUY_TO_COVER orders are mapped to BUY orders.
-        * SELL_SHORT orders are mapped to SELL orders.
-    """
+    def _buyMarket(self, quantity):
+    	timestamp, jsonData = self.__huobi.buyMarket(quantity)
+    	ret = jsonData['result']
+    	if ret != "success":
+    		raise Exception("Buy market order submission failed!")
 
-    def __init__(self, cash, barFeed, fee=0.0025):
-        commission = backtesting.TradePercentage(fee)
-        super(BacktestingBroker, self).__init__(cash, barFeed, commission)
+    	orderId = int(jsonData[1])
+    	huobiOrder = MyOrder()
+    	huobiOrder.setId(orderId)
+    	huobiOrder.setDateTime(timestamp)
+    	return huobiOrder
 
-    def getInstrumentTraits(self, instrument):
-        return common.BTCTraits()
+    def _sellMarket(self, quantity):
+    	jsonData = self.__huobi.sellMarket(quantity)
+    	ret = jsonData[0]
+    	if ret != "success":
+    		raise Exception("Sell market order submission failed!")
+
+    	orderId = int(jsonData[1])
+    	huobiOrder = MyOrder()
+    	huobiOrder.setId(orderId)
+    	return huobiOrder
+
+    def _cancelOrder(self, id):
+    	pass
 
     def submitOrder(self, order):
-        if order.isInitial():
-            # Override user settings based on Bitstamp limitations.
-            order.setAllOrNone(False)
-            order.setGoodTillCanceled(True)
-        return super(BacktestingBroker, self).submitOrder(order)
+		if order.isInitial():
+			order.setAllOrNone(False)
+			order.setGoodTillCanceled(True)
 
-    def createMarketOrder(self, action, instrument, quantity, onClose=False):
-        raise Exception("Market orders are not supported")
+			if order.isBuy():
+				huobiOrder = self._buyMarket(order.getQuantity())
+			else:
+				huobiOrder = self._sellMarket(order.getQuantity())
+			order.setSubmitted(huobiOrder.getId(), huobiOrder.getDateTime())
+			self._registerOrder(order)
+			order.switchState(broker.Order.State.SUBMITTED)
+		else:
+			raise Exception("The order was already processed")
 
-    def createLimitOrder(self, action, instrument, limitPrice, quantity):
-        if instrument != common.btc_symbol:
-            raise Exception("Only BTC instrument is supported")
+	def start(self):
+		mylogger.logger.info("Start broker")
+		super(MyLiveBroker, self).start()
 
-        if action == broker.Order.Action.BUY_TO_COVER:
-            action = broker.Order.Action.BUY
-        elif action == broker.Order.Action.SELL_SHORT:
-            action = broker.Order.Action.SELL
+	def stop(self):
+		mylogger.logger.info("Stop broker")
+		self.__stop = True
 
-        if limitPrice * quantity < BacktestingBroker.MIN_TRADE_USD:
-            raise Exception("Trade must be >= %s" % (BacktestingBroker.MIN_TRADE_USD))
+	def join(self):
+		pass
 
-        if action == broker.Order.Action.BUY:
-            # Check that there is enough cash.
-            fee = self.getCommission().calculate(None, limitPrice, quantity)
-            cashRequired = limitPrice * quantity + fee
-            if cashRequired > self.getCash(False):
-                raise Exception("Not enough cash")
-        elif action == broker.Order.Action.SELL:
-            # Check that there are enough coins.
-            if quantity > self.getShares(common.btc_symbol):
-                raise Exception("Not enough %s" % (common.btc_symbol))
-        else:
-            raise Exception("Only BUY/SELL orders are supported")
+	def eof(self):
+		return self.__stop
 
-        return super(BacktestingBroker, self).createLimitOrder(action, instrument, limitPrice, quantity)
+	def dispatch(self):
+        ordersToProcess = self.__activeOrders.values()
+        for order in ordersToProcess:
+            if order.isSubmitted():
+                order.switchState(broker.Order.State.ACCEPTED)
+                self.notifyOrderEvent(broker.OrderEvent(order, broker.OrderEvent.Type.ACCEPTED, None))
 
-    def createStopOrder(self, action, instrument, stopPrice, quantity):
-        raise Exception("Stop orders are not supported")
+        self._orderStatusUpdate(ordersToProcess)
 
-    def createStopLimitOrder(self, action, instrument, stopPrice, limitPrice, quantity):
-        raise Exception("Stop limit orders are not supported")
+    def getInstrumentTraits(self, instrument)
+     	return MyInstrumentTraits()
 
+    '''def getCash(self, includeShort=True)
+    	self.__cash
 
-class PaperTradingBroker(BacktestingBroker):
-    """A Bitstamp paper trading broker.
+    def getShares(self, instrument):
+    	return self.__shares.get(instrument, 0)
 
-    :param cash: The initial amount of cash.
-    :type cash: int/float.
-    :param barFeed: The bar feed that will provide the bars.
-    :type barFeed: :class:`pyalgotrade.barfeed.BarFeed`
-    :param fee: The fee percentage for each order. Defaults to 0.5%.
-    :type fee: float.
+    def getPositions(self):
+        return self.__shares
 
-    .. note::
-        * Only limit orders are supported.
-        * Orders are automatically set as **goodTillCanceled=True** and  **allOrNone=False**.
-        * BUY_TO_COVER orders are mapped to BUY orders.
-        * SELL_SHORT orders are mapped to SELL orders.
-    """
+    def getActiveOrders(self, instrument=None):
+     	return self.__activeOrders.values()'''
 
-    pass
+    def createMarketOrder(self, action, intrument, quantity, onClose=False):
+    	return MarketOrder(action, instrument, quantity, onClose, self.getInstrumentTraits(instrument))
+
+    def cancelOrder(self, order):
+        activeOrder = self.__activeOrders.get(order.getId())
+        if activeOrder is None:
+            raise Exception("The order is not active anymore")
+        if activeOrder.isFilled():
+            raise Exception("Can't cancel order that has already been filled")
+
+        ret = self._cancelOrder(order.getId())
+        if ret != "success"
+        	mylogger.logger.info("Failed to cancel order with id %s" % order.getId())
+        	return
+        self._unregisterOrder(order)
+        order.switchState(broker.Order.State.CANCELED)
+
+        # Update cash and shares.
+        #self.refreshAccountBalance()
+
+        # Notify that the order was canceled.
+        self.notifyOrderEvent(broker.OrderEvent(order, broker.OrderEvent.Type.CANCELED, "User requested cancellation"))

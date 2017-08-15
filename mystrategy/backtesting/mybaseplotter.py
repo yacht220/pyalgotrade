@@ -12,7 +12,7 @@ from mystrategy.huobi import huobiapi
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.DataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '060', 500)
+kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '060', 120)
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson("btc", kline)
