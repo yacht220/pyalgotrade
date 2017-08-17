@@ -121,7 +121,8 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__initializationOk = None
         self.__enableReconnection = True
         self.__stopped = False
-        self.__orderBookUpdateEvent = observer.Event()
+        self.__huobidata = huobiapi.DataApi()
+        #self.__orderBookUpdateEvent = observer.Event()
 
     # Factory method for testing purposes.
     def buildWebSocketClientThread(self):
@@ -192,8 +193,6 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
             pass
         return ret'''
 
-        huobi = huobiapi.DataApi()
-
         '''while True:
             bar = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '001', 1)
             assert(len(bar) == 1)
@@ -202,11 +201,11 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
                 break
             time.sleep(5)'''
 
-        bar = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '001', 1)
+        bar = self.__huobidata.getKline(huobiapi.SYMBOL_BTCCNY, '001', 1)
         assert(len(bar) == 1)
         datetime = self.__getTradeDateTime(bar[0][0])
         if (datetime == self.__prevTradeDateTime):
-                #time.sleep(1)
+                time.sleep(1)
                 return False
 
         barDict = {
@@ -241,6 +240,10 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
             common.btc_symbol: TradeBar(self.__getTradeDateTime(trade), trade)
             }
         self.__barDicts.append(barDict)'''
+
+    def getOrderBookUpdate(self):
+        jsonData = self.__huobidata.getDepth(huobiapi.SYMBOL_BTCCNY, '1')
+        return jsonData['bids'][0][0], jsonData['asks'][0][0]
 
     def barsHaveAdjClose(self):
         return False
@@ -293,7 +296,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     def eof(self):
         return self.__stopped
 
-    def getOrderBookUpdateEvent(self):
+    '''def getOrderBookUpdateEvent(self):
         """
         Returns the event that will be emitted when the orderbook gets updated.
 
@@ -302,4 +305,4 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
         :rtype: :class:`pyalgotrade.observer.Event`.
         """
-        return self.__orderBookUpdateEvent
+        return self.__orderBookUpdateEvent'''

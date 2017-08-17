@@ -8,40 +8,38 @@ from mystrategy.backtesting import mysignal
 #from pyalgotrade.broker import backtesting
 import pdb
 
-
 class Strategy(strategy.BaseStrategy):
-    def __init__(self, feed, brk, signal):
+    def __init__(self, feed, brk, signal, smaPeriodFast, smaPeriodSlow = None):
         super(Strategy, self).__init__(feed, brk)
-        smaPeriodFast = 3
-        smaPeriodSlow = 5
         self.__instrument = "BTC"
         self.__prices = feed[self.__instrument].getCloseDataSeries()
         self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
-        self.__smaSlow = ma.SMA(self.__prices, smaPeriodSlow)
+        if smaPeriodSlow is not None:
+            self.__smaSlow = ma.SMA(self.__prices, smaPeriodSlow)
+        else:
+            self.__smaSlow = None
         self.__bid = None
         self.__ask = None
         self.__position = None
         self.__posSize = 0.05
-        self.__buyPrice = None
-        self.__sellPrice = None
+        #self.__filledBuyPrice = None
+        #self.__filledSellPrice = None
         self.__signal = signal
 
         # Subscribe to order book update events to get bid/ask prices to trade.
         #feed.getOrderBookUpdateEvent().subscribe(self.__onOrderBookUpdate)
 
-    '''def __onOrderBookUpdate(self, orderBookUpdate):
-        bid = orderBookUpdate.getBidPrices()[0]
-        ask = orderBookUpdate.getAskPrices()[0]
+    def _getOrderBookUpdate(self):
+        bid, ask = self.getFeed().getOrderBookUpdate()
 
-        if bid != self.__bid or ask != self.__ask:
-            self.__bid = bid
-            self.__ask = ask
-            #self.info("Order book updated. Best bid: %s. Best ask: %s" % (self.__bid, self.__ask))'''
+        self.__bid = bid 
+        self.__ask = ask
+        self.info("Order book updated. Best bid: %s. Best ask: %s" % (self.__bid, self.__ask))
 
     def onEnterOk(self, position):
-        self.__buyPrice = position.getEntryOrder().getExecutionInfo().getPrice()
+        filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
         #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))
-        self.info("Position opened at %s" % self.__buyPrice)
+        self.info("Position opened at %s" % filledPrice)
 
     def onEnterCanceled(self, position):
         self.info("Position entry canceled")
@@ -49,8 +47,8 @@ class Strategy(strategy.BaseStrategy):
 
     def onExitOk(self, position):
         self.__position = None
-        self.__sellPrice = position.getExitOrder().getExecutionInfo().getPrice()
-        self.info("Position closed at %s" % self.__sellPrice)
+        filledPrice = position.getExitOrder().getExecutionInfo().getPrice()
+        self.info("Position closed at %s" % filledPrice)
 
     def onExitCanceled(self, position):
         self.info("Position exit canceled")
@@ -68,6 +66,8 @@ class Strategy(strategy.BaseStrategy):
 
         bar = bars[self.__instrument]
         self.info("Time: %s. Price: %s. Volume: %s." % (bar.getDateTime(), bar.getClose(), bar.getVolume()))
+
+        self._getOrderBookUpdate()
         '''for i in self.__prices:
             print "prices %s" % i
 
@@ -96,25 +96,26 @@ class Strategy(strategy.BaseStrategy):
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
             if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow):
-                self.__buyPrice = bar.getClose()
-                shares = float(self.getBroker().getCash() * 0.9 / self.__buyPrice)
-                self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__buyPrice))
+                #self.__buyPrice = bar.getClose()
+                shares = float(self.getBroker().getCash() * 0.9 / self.__ask)
+                self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__ask))
                 # Enter a buy market order. The order is good till canceled.
-                self.__position = self.enterLong(self.__instrument, self.__buyPrice, shares, True)
+                #self.__position = self.enterLong(self.__instrument, shares, True)
+                self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
             if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow):
-                self.__sellPrice = bar.getClose()
-                self.info("Exit signal. Sell at %s CNY" % (self.__sellPrice))
-                self.__position.exitMarket()
+                #self.__sellPrice = bar.getClose()
+                self.info("Exit signal. Sell at %s CNY" % (self.__bid))
+                #self.__position.exitMarket()
+                self.__position.exitLimit(self.__bid)
 
 def main():
     barFeed = mylivefeed.LiveTradeFeed()
-    brk = mytestbroker.PaperTradingBroker(10000, barFeed, 0.002)
-    #commission = backtesting.TradePercentage(0.002)
-    #brk = mybroker.MyBroker(10000, barFeed, commission)
+    #brk = mytestbroker.PaperTradingBroker(10000, barFeed, 0.002)
+    brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()
-    strat = Strategy(barFeed, brk, signal)
+    strat = Strategy(barFeed, brk, signal, 3, 5)
     
     strat.run()
 

@@ -1,41 +1,41 @@
 from pyalgotrade import broker
 from mystrategy.huobi import huobiapi
-from mystrategy import mylogger
+from mystrategy.common import mylogger
 
 class MyInstrumentTraits(broker.InstrumentTraits):
-	def roundQuantity(self, quantity):
-		return float(quantity)
+    def roundQuantity(self, quantity):
+        return float(quantity)
 
 class MyOrder(object):
-	def __init__(self):
-		self.__id = None
-		self.__type = None
-		self.__requestPrice = None, 
-		self.__requestQuantity = None, 
-		self.__filledPrice = None, 
-		self.__filledQuantity = None
-		self.__vot = None
-		self.__fee = None
-		self.__total = None 
-		self.__status = None
-		self.__dateTime = None
+    def __init__(self):
+        self.__id = None
+        self.__type = None
+        self.__requestPrice = None
+        self.__requestQuantity = None
+        self.__filledPrice = None
+        self.__filledQuantity = None
+        self.__vot = None
+        self.__fee = None
+        self.__total = None 
+        self.__status = None
+        self.__dateTime = None
 
-	def setId(self, id_):
-		self.__id = id_
+    def setId(self, id_):
+        self.__id = id_
 
-	def getId(self):
-		return self.__id
+    def getId(self):
+        return self.__id
 
-	def setType(self, type_):
-		self.__type = type_
+    def setType(self, type_):
+        self.__type = type_
 
-	def getType(self):
-		return self.__type
+    def getType(self):
+        return self.__type
 
-	def setRequestPrice(self, requestPrice):
-		self.__requestPrice = requestPrice
+    def setRequestPrice(self, requestPrice):
+        self.__requestPrice = requestPrice
 
-	def getRequestPrice(self):
+    def getRequestPrice(self):
         return self.__requestPrice
 
     def setRequestQuantity(self, requestQuantity):
@@ -45,10 +45,10 @@ class MyOrder(object):
         return self.__requestQuantity
 
     def setFilledPrice(self, filledPrice):
-        self.__filledPrice = filledQuantity
+        self.__filledPrice = filledPrice
 
     def getFilledPrice(self):
-        return self.__filledQuantity
+        return self.__filledPrice
 
     def setFilledQuantity(self, filledQuantity):
         self.__filledQuantity = filledQuantity
@@ -65,8 +65,8 @@ class MyOrder(object):
     def setFee(self, fee):
         self.__fee = fee
 
-	def getFee(self):
-		return self.__fee
+    def getFee(self):
+        return self.__fee
 
     def setTotal(self, total):
         self.__total = total
@@ -80,24 +80,24 @@ class MyOrder(object):
     def getStatus(self):
         return self.__status
 
-	def setDateTime(self, time):
-		self.__dateTime = time
+    def setDateTime(self, time):
+        self.__dateTime = time
 
     def getDateTime(self):
         return self.__dateTime    
 
 class MyLiveBroker(broker.Broker):
-	def __init__(self):
-		super(MyLiveBroker, self).__init__()
-		self.__huobi = huobiapi.TradeApi()
-		self.__stop = False
-		self.__activeOrders = {}
-		self.__cash = 0
-		self.__shares = {}
+    def __init__(self):
+        super(MyLiveBroker, self).__init__()
+        self.__huobitrade = huobiapi.TradeApiFake()
+        self.__stop = False
+        self.__activeOrders = {}
+        self.__total = 0
+        self.__cash = 0
+        self.__shares = {}
 
-
-	def _registerOrder(self, order):
-		assert(order.getId() not in self.__activeOrders)
+    def _registerOrder(self, order):
+        assert(order.getId() not in self.__activeOrders)
         assert(order.getId() is not None)
         self.__activeOrders[order.getId()] = order
 
@@ -106,97 +106,132 @@ class MyLiveBroker(broker.Broker):
         assert(order.getId() is not None)
         del self.__activeOrders[order.getId()]
 
+    def _refreshAccountBalance(self):
+        self.__stop  = True
+        jsonData = self.__huobitrade.getAccountInfo()
+        self.__total = jsonData['total']
+        self.__cash = jsonData['available_cny_display']
+        self.__shares = {'btc':jsonData['available_btc_display']}
+        self.__stop = False
+
     def _orderStatusUpdate(self, orders):
-    	for order in orders:
-    		huobiOrder = self._getOrderInfo(order.getId())
-    		fee = huobiOrder.getFee()
-    		filledPrice = huobiOrder.getFilledPrice()
-    		filledQuantity = huobiOrder.getFilledQuantity()
-    		dateTime = huobiOrder.getDateTime()
+        for order in orders:
+            huobiOrder = self._getOrderInfo(order.getId())
+            fee = huobiOrder.getFee()
+            filledPrice = huobiOrder.getFilledPrice()
+            filledQuantity = huobiOrder.getFilledQuantity()
+            dateTime = huobiOrder.getDateTime()
+            #TODO check the status
 
-    		orderExecutionInfo = broker.OrderExecutionInfo(filledPrice, abs(filledQuantity), fee, dateTime)
-    		order.addExecutionInfo(orderExecutionInfo)
-    		if not order.isActive()
-    			self._unregisterOrder(order)
+            orderExecutionInfo = broker.OrderExecutionInfo(filledPrice, abs(filledQuantity), fee, dateTime)
+            order.addExecutionInfo(orderExecutionInfo)
+            if not order.isActive():
+                self._unregisterOrder(order)
 
-    		if order.isFilled():
-    			eventType = broker.OrderEvent.Type.FILLED
-    		else:
-    			eventType = broker.OrderEvent.Type.PARTIALLY_FILLED
-    		self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
+            if order.isFilled():
+                eventType = broker.OrderEvent.Type.FILLED
+            else:
+                eventType = broker.OrderEvent.Type.PARTIALLY_FILLED
+            self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
 
     def _getOrderInfo(self, id_):
-    	timestamp, jsonData = self.__huobi.getOrderInfo(id_)
-    	order = MyOrder()
-    	order.setId(int(jsonData['id']))
-    	order.setType(int(jsonData['type']))
-    	order.setRequestPrice(float(jsonData['order_price']))
-    	order.setRequestQuantity(float(jsonData['order_quantity']))
-    	order.setFilledPrice(float(jsonData['processed_price']))
-    	order.setFilledQuantity(float(jsonData['processed_amount']))
-    	order.setVot(float(jsonData['vot']))
- 		order.setFee(float(jsonData['fee']))
- 		order.setTotal(float(jsonData['total']))
- 		order.setStatus(int(jsonData['status']))
-    	order.setDateTime(timestamp)
-    	return order
+        timestamp, jsonData = self.__huobitrade.getOrderInfo(id_)
+        order = MyOrder()
+        order.setId(int(jsonData['id']))
+        order.setType(int(jsonData['type']))
+        order.setRequestPrice(float(jsonData['order_price']))
+        order.setRequestQuantity(float(jsonData['order_amount']))
+        order.setFilledPrice(float(jsonData['processed_price']))
+        order.setFilledQuantity(float(jsonData['processed_amount']))
+        order.setVot(float(jsonData['vot']))
+        order.setFee(float(jsonData['fee']))
+        order.setTotal(float(jsonData['total']))
+        order.setStatus(int(jsonData['status']))
+        order.setDateTime(timestamp)
+        return order
 
     def _buyMarket(self, quantity):
-    	timestamp, jsonData = self.__huobi.buyMarket(quantity)
-    	ret = jsonData['result']
-    	if ret != "success":
-    		raise Exception("Buy market order submission failed!")
+        timestamp, jsonData = self.__huobitrade.buyMarket(quantity)
+        ret = jsonData['result']
+        if ret != "success":
+            raise Exception("Buy market order submission failed!")
 
-    	orderId = int(jsonData[1])
-    	huobiOrder = MyOrder()
-    	huobiOrder.setId(orderId)
-    	huobiOrder.setDateTime(timestamp)
-    	return huobiOrder
+        orderId = int(jsonData['id'])
+        huobiOrder = MyOrder()
+        huobiOrder.setId(orderId)
+        huobiOrder.setDateTime(timestamp)
+        return huobiOrder
 
     def _sellMarket(self, quantity):
-    	jsonData = self.__huobi.sellMarket(quantity)
-    	ret = jsonData[0]
-    	if ret != "success":
-    		raise Exception("Sell market order submission failed!")
+        timestamp, jsonData = self.__huobitrade.sellMarket(quantity)
+        ret = jsonData['result']
+        if ret != "success":
+            raise Exception("Sell market order submission failed!")
 
-    	orderId = int(jsonData[1])
-    	huobiOrder = MyOrder()
-    	huobiOrder.setId(orderId)
-    	return huobiOrder
+        orderId = int(jsonData['id'])
+        huobiOrder = MyOrder()
+        huobiOrder.setId(orderId)
+        huobiOrder.setDateTime(timestamp)
+        return huobiOrder
+
+    def _buyLimit(self, price, quantity):
+        timestamp, jsonData = self.__huobitrade.buyLimit(price, quantity)
+        ret = jsonData['result']
+        if ret != "success":
+            raise Exception("Buy market order submission failed!")
+
+        orderId = int(jsonData['id'])
+        huobiOrder = MyOrder()
+        huobiOrder.setId(orderId)
+        huobiOrder.setDateTime(timestamp)
+        return huobiOrder
+
+    def _sellLimit(self, price, quantity):
+        timestamp, jsonData = self.__huobitrade.sellLimit(price, quantity)
+        ret = jsonData['result']
+        if ret != "success":
+            raise Exception("Sell market order submission failed!")
+
+        orderId = int(jsonData['id'])
+        huobiOrder = MyOrder()
+        huobiOrder.setId(orderId)
+        huobiOrder.setDateTime(timestamp)
+        return huobiOrder
 
     def _cancelOrder(self, id):
-    	pass
+        pass
 
     def submitOrder(self, order):
-		if order.isInitial():
-			order.setAllOrNone(False)
-			order.setGoodTillCanceled(True)
+        if order.isInitial():
+            order.setAllOrNone(False)
+            order.setGoodTillCanceled(True)
 
-			if order.isBuy():
-				huobiOrder = self._buyMarket(order.getQuantity())
-			else:
-				huobiOrder = self._sellMarket(order.getQuantity())
-			order.setSubmitted(huobiOrder.getId(), huobiOrder.getDateTime())
-			self._registerOrder(order)
-			order.switchState(broker.Order.State.SUBMITTED)
-		else:
-			raise Exception("The order was already processed")
+            if order.isBuy():
+                huobiOrder = self._buyLimit(order.getLimitPrice(), order.getQuantity())
+            else:
+                huobiOrder = self._sellLimit(order.getLimitPrice(), order.getQuantity())
+            order.setSubmitted(huobiOrder.getId(), huobiOrder.getDateTime())
+            self._registerOrder(order)
+            order.switchState(broker.Order.State.SUBMITTED)
+        else:
+            raise Exception("The order was already processed")
 
-	def start(self):
-		mylogger.logger.info("Start broker")
-		super(MyLiveBroker, self).start()
+    def start(self):
+        mylogger.logger.info("Start broker")
+        super(MyLiveBroker, self).start()
+        self._refreshAccountBalance()
+    
+    def stop(self):
+        mylogger.logger.info("Stop broker")
+        self.__stop = True
 
-	def stop(self):
-		mylogger.logger.info("Stop broker")
-		self.__stop = True
+    def join(self):
+        pass
 
-	def join(self):
-		pass
+    def eof(self):
+        return self.__stop
 
-	def eof(self):
-		return self.__stop
-
-	def dispatch(self):
+    def dispatch(self):
         ordersToProcess = self.__activeOrders.values()
         for order in ordersToProcess:
             if order.isSubmitted():
@@ -204,24 +239,42 @@ class MyLiveBroker(broker.Broker):
                 self.notifyOrderEvent(broker.OrderEvent(order, broker.OrderEvent.Type.ACCEPTED, None))
 
         self._orderStatusUpdate(ordersToProcess)
+        self._refreshAccountBalance()
+        mylogger.logger.info("Test equity %.2f" % self.getEquity())
 
-    def getInstrumentTraits(self, instrument)
-     	return MyInstrumentTraits()
+    def peekDateTime(self):
+        return None
 
-    '''def getCash(self, includeShort=True)
-    	self.__cash
+    def getInstrumentTraits(self, instrument):
+        return MyInstrumentTraits()
+
+    def getCash(self, includeShort=True):
+        return self.__cash
 
     def getShares(self, instrument):
-    	return self.__shares.get(instrument, 0)
+        return self.__shares.get(instrument, 0)
 
     def getPositions(self):
         return self.__shares
 
-    def getActiveOrders(self, instrument=None):
-     	return self.__activeOrders.values()'''
+    def getEquity(self):
+        return self.__total
 
-    def createMarketOrder(self, action, intrument, quantity, onClose=False):
-    	return MarketOrder(action, instrument, quantity, onClose, self.getInstrumentTraits(instrument))
+    def getActiveOrders(self, instrument=None):
+        raise Exception("Not supported")
+
+    def createMarketOrder(self, action, instrument, quantity, onClose=False):
+        return broker.MarketOrder(action, instrument, quantity, onClose, self.getInstrumentTraits(instrument))
+
+    def createLimitOrder(self, action, instrument, limitPrice, quantity):
+        #raise Exception("Not supported")
+        return broker.LimitOrder(action, instrument, limitPrice, quantity, self.getInstrumentTraits(instrument))
+
+    def createStopOrder(self, action, instrument, stopPrice, quantity):
+        raise Exception("Not supported")
+
+    def createStopLimitOrder(self, action, instrument, stopPrice, limitPrice, quantity):
+        raise Exception("Not supported")
 
     def cancelOrder(self, order):
         activeOrder = self.__activeOrders.get(order.getId())
@@ -231,9 +284,9 @@ class MyLiveBroker(broker.Broker):
             raise Exception("Can't cancel order that has already been filled")
 
         ret = self._cancelOrder(order.getId())
-        if ret != "success"
-        	mylogger.logger.info("Failed to cancel order with id %s" % order.getId())
-        	return
+        if ret != "success":
+            mylogger.logger.info("Failed to cancel order with id %s" % order.getId())
+            return
         self._unregisterOrder(order)
         order.switchState(broker.Order.State.CANCELED)
 

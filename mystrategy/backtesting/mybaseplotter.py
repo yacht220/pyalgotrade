@@ -4,7 +4,7 @@ from pyalgotrade.stratanalyzer import returns
 import mybasestrategy
 import myfeed
 import mybroker
-import mysignal
+from mystrategy.common import mysignal
 from mystrategy.huobi import huobiapi
 
 # Load the yahoo feed from the CSV file
