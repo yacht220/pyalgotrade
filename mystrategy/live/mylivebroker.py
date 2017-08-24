@@ -2,6 +2,8 @@ from pyalgotrade import broker
 from mystrategy.huobi import huobiapi
 from mystrategy.common import mylogger
 
+mylivebrklogger = mylogger.getMyLogger("mylivebroker")
+
 class MyInstrumentTraits(broker.InstrumentTraits):
     def roundQuantity(self, quantity):
         return float(quantity)
@@ -109,9 +111,9 @@ class MyLiveBroker(broker.Broker):
     def _refreshAccountBalance(self):
         self.__stop  = True
         jsonData = self.__huobitrade.getAccountInfo()
-        self.__total = jsonData['total']
-        self.__cash = jsonData['available_cny_display']
-        self.__shares = {'btc':jsonData['available_btc_display']}
+        self.__total = float(jsonData['total'])
+        self.__cash = float(jsonData['available_cny_display'])
+        self.__shares = {'btc':float(jsonData['available_btc_display'])}
         self.__stop = False
 
     def _orderStatusUpdate(self, orders):
@@ -137,7 +139,7 @@ class MyLiveBroker(broker.Broker):
     def _getOrderInfo(self, id_):
         timestamp, jsonData = self.__huobitrade.getOrderInfo(id_)
         order = MyOrder()
-        order.setId(int(jsonData['id']))
+        order.setId(long(jsonData['id']))
         order.setType(int(jsonData['type']))
         order.setRequestPrice(float(jsonData['order_price']))
         order.setRequestQuantity(float(jsonData['order_amount']))
@@ -152,11 +154,10 @@ class MyLiveBroker(broker.Broker):
 
     def _buyMarket(self, quantity):
         timestamp, jsonData = self.__huobitrade.buyMarket(quantity)
-        ret = jsonData['result']
-        if ret != "success":
-            raise Exception("Buy market order submission failed!")
+        if jsonData.has_key('code'):
+            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
 
-        orderId = int(jsonData['id'])
+        orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
@@ -164,11 +165,10 @@ class MyLiveBroker(broker.Broker):
 
     def _sellMarket(self, quantity):
         timestamp, jsonData = self.__huobitrade.sellMarket(quantity)
-        ret = jsonData['result']
-        if ret != "success":
-            raise Exception("Sell market order submission failed!")
+        if jsonData.has_key('code'):
+            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
 
-        orderId = int(jsonData['id'])
+        orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
@@ -176,11 +176,10 @@ class MyLiveBroker(broker.Broker):
 
     def _buyLimit(self, price, quantity):
         timestamp, jsonData = self.__huobitrade.buyLimit(price, quantity)
-        ret = jsonData['result']
-        if ret != "success":
-            raise Exception("Buy market order submission failed!")
+        if jsonData.has_key('code'):
+            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
 
-        orderId = int(jsonData['id'])
+        orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
@@ -188,18 +187,22 @@ class MyLiveBroker(broker.Broker):
 
     def _sellLimit(self, price, quantity):
         timestamp, jsonData = self.__huobitrade.sellLimit(price, quantity)
-        ret = jsonData['result']
-        if ret != "success":
-            raise Exception("Sell market order submission failed!")
+        if jsonData.has_key('code'):
+            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
 
-        orderId = int(jsonData['id'])
+        orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
         return huobiOrder
 
-    def _cancelOrder(self, id):
-        pass
+    def _cancelOrder(self, id_):
+        timestamp, jsonData = self.__huobitrade.cancelOrder(id_)
+        if jsonData.has_key('code'):
+            mylivebrklogger.info("Failed to cancel order %s. Error code %s, message %s" % id, jsonData['code'], jsaonData['message'])
+            return False
+
+        return True        
 
     def submitOrder(self, order):
         if order.isInitial():
@@ -217,12 +220,12 @@ class MyLiveBroker(broker.Broker):
             raise Exception("The order was already processed")
 
     def start(self):
-        mylogger.logger.info("Start broker")
+        mylivebrklogger.info("Start broker")
         super(MyLiveBroker, self).start()
         self._refreshAccountBalance()
     
     def stop(self):
-        mylogger.logger.info("Stop broker")
+        mylivebrklogger.info("Stop broker")
         self.__stop = True
 
     def join(self):
@@ -240,7 +243,7 @@ class MyLiveBroker(broker.Broker):
 
         self._orderStatusUpdate(ordersToProcess)
         self._refreshAccountBalance()
-        mylogger.logger.info("Test equity %.2f" % self.getEquity())
+        mylivebrklogger.info("Test equity %.2f" % self.getEquity())
 
     def peekDateTime(self):
         return None
@@ -284,14 +287,14 @@ class MyLiveBroker(broker.Broker):
             raise Exception("Can't cancel order that has already been filled")
 
         ret = self._cancelOrder(order.getId())
-        if ret != "success":
-            mylogger.logger.info("Failed to cancel order with id %s" % order.getId())
+        if ret is False:
+            mylivebrklogger.info("Failed to cancel order with id %s" % order.getId())
             return
         self._unregisterOrder(order)
         order.switchState(broker.Order.State.CANCELED)
 
         # Update cash and shares.
-        #self.refreshAccountBalance()
+        self._refreshAccountBalance()
 
         # Notify that the order was canceled.
         self.notifyOrderEvent(broker.OrderEvent(order, broker.OrderEvent.Type.CANCELED, "User requested cancellation"))

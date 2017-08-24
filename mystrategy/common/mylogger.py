@@ -1,3 +1,5 @@
 import pyalgotrade.logger
 
-logger = pyalgotrade.logger.getLogger("huobi")
+def getMyLogger(name):
+	logger = pyalgotrade.logger.getLogger(name)
+	return logger

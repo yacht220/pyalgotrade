@@ -20,15 +20,16 @@
 
 import datetime
 import time
-import Queue
 
 from pyalgotrade import bar
 from pyalgotrade import barfeed
 from pyalgotrade import observer
-from pyalgotrade.bitstamp import common
-from pyalgotrade.bitstamp import wsclient
 from mystrategy.huobi import huobiapi
+from mystrategy import common
+from mystrategy.common import mylogger
 import pdb
+
+mylivefeedlogger = common.mylogger.getMyLogger("mylivefeed")
 
 
 class TradeBar(bar.Bar):
@@ -117,58 +118,9 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__barDicts = []
         self.registerInstrument(common.btc_symbol)
         self.__prevTradeDateTime = None
-        self.__thread = None
-        self.__initializationOk = None
-        self.__enableReconnection = True
         self.__stopped = False
         self.__huobidata = huobiapi.DataApi()
         #self.__orderBookUpdateEvent = observer.Event()
-
-    # Factory method for testing purposes.
-    def buildWebSocketClientThread(self):
-        return wsclient.WebSocketClientThread()
-
-    def getCurrentDateTime(self):
-        return wsclient.get_current_datetime()
-
-    def enableReconection(self, enableReconnection):
-        self.__enableReconnection = enableReconnection
-
-    def __initializeClient(self):
-        self.__initializationOk = True
-        common.logger.info("Initializing websocket client.")
-
-        '''try:
-            # Start the thread that runs the client.
-            self.__thread = self.buildWebSocketClientThread()
-            self.__thread.start()
-        except Exception, e:
-            self.__initializationOk = False
-            common.logger.error("Error connecting : %s" % str(e))'''
-
-        # Wait for initialization to complete.
-        '''while self.__initializationOk is None and self.__thread.is_alive():
-            self.__dispatchImpl([wsclient.WebSocketClient.ON_CONNECTED])'''
-
-        if self.__initializationOk:
-            common.logger.info("Initialization ok.")
-        else:
-            common.logger.error("Initialization failed.")
-        return self.__initializationOk
-
-    def __onConnected(self):
-        self.__initializationOk = True
-
-    def __onDisconnected(self):
-        if self.__enableReconnection:
-            initialized = False
-            while not self.__stopped and not initialized:
-                common.logger.info("Reconnecting")
-                initialized = self.__initializeClient()
-                if not initialized:
-                    time.sleep(5)
-        else:
-            self.__stopped = True
 
     def __dispatchImpl(self, eventFilter):
         '''ret = False
@@ -188,7 +140,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
                 self.__onDisconnected()
             else:
                 ret = False
-                common.logger.error("Invalid event received to dispatch: %s - %s" % (eventType, eventData))
+                mylivefeedlogger.error("Invalid event received to dispatch: %s - %s" % (eventType, eventData))
         except Queue.Empty:
             pass
         return ret'''
@@ -201,22 +153,23 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
                 break
             time.sleep(5)'''
 
-        bar = self.__huobidata.getKline(huobiapi.SYMBOL_BTCCNY, '001', 1)
-        assert(len(bar) == 1)
-        datetime = self.__getTradeDateTime(bar[0][0])
-        if (datetime == self.__prevTradeDateTime):
+        bar = self.__huobidata.getKline(huobiapi.SYMBOL_BTCCNY, '001', 2)
+        assert(len(bar) == 2)
+        curdatetime = self.__getTradeDateTime(bar[1][0])
+        if (curdatetime == self.__prevTradeDateTime):
                 time.sleep(1)
                 return False
 
+        prevdatetime = self.__getTradeDateTime(bar[0][0])        
         barDict = {
-            common.btc_symbol: TradeBar(datetime, bar[0])
+            common.btc_symbol: TradeBar(prevdatetime, bar[0])
         }
-        self.__prevTradeDateTime = datetime
+        self.__prevTradeDateTime = curdatetime
         self.__barDicts.append(barDict)
 
-        common.logger.info("LiveTradeFeed.__dispatchImpl:")
+        mylivefeedlogger.info("LiveTradeFeed.__dispatchImpl:")
         for tb in self.__barDicts:
-            common.logger.info("%s, %s" % (tb["BTC"].getDateTime(), tb["BTC"].getClose()))
+            mylivefeedlogger.info("%s, %s" % (tb[common.btc_symbol].getDateTime(), tb[common.btc_symbol].getClose()))
 
         #pdb.set_trace()
         return True
@@ -241,6 +194,9 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
             }
         self.__barDicts.append(barDict)'''
 
+    def getCurrentDateTime(self):
+        return datetime.datetime.now()
+
     def getOrderBookUpdate(self):
         jsonData = self.__huobidata.getDepth(huobiapi.SYMBOL_BTCCNY, '1')
         return jsonData['bids'][0][0], jsonData['asks'][0][0]
@@ -261,11 +217,6 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     # This may raise.
     def start(self):
         super(LiveTradeFeed, self).start()
-        if self.__thread is not None:
-            raise Exception("Already running")
-        elif not self.__initializeClient():
-            self.__stopped = True
-            raise Exception("Initialization failed")
 
     def dispatch(self):
         # Note that we may return True even if we didn't dispatch any Bar
@@ -280,18 +231,11 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
     # This should not raise.
     def stop(self):
-        try:
-            self.__stopped = True
-            '''if self.__thread is not None and self.__thread.is_alive():
-                common.logger.info("Shutting down websocket client.")
-                self.__thread.stop()'''
-        except Exception, e:
-            common.logger.error("Error shutting down client: %s" % (str(e)))
+        self.__stopped = True
 
     # This should not raise.
     def join(self):
-        if self.__thread is not None:
-            self.__thread.join()
+        pass
 
     def eof(self):
         return self.__stopped

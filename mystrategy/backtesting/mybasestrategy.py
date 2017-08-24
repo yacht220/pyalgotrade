@@ -5,7 +5,7 @@ import mybroker
 import pdb
 
 class MyBaseStrategy(strategy.BacktestingStrategy):
-	def __init__(self, feed, broker, instrument, signal, smaPeriodFast, smaPeriodSlow = None):
+	def __init__(self, feed, broker, instrument, signal, smaPeriodFast = None, smaPeriodSlow = None):
 		self.__instrument = instrument
 		self.__position = None
 		super(MyBaseStrategy, self).__init__(feed, broker)
@@ -14,7 +14,10 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		self.setUseAdjustedValues(False)
 		self.__prices = feed[instrument].getPriceDataSeries()
 		self.__signal = signal
-		self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
+		if smaPeriodFast is not None:
+			self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
+		else:
+			self.__smaFast = None
 		if smaPeriodSlow is not None:
 			self.__smaSlow = ma.SMA(self.__prices,smaPeriodSlow)
 		else:
@@ -44,11 +47,6 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		self.__position.exitMarket()
 
 	def onBars(self, bars):
-		if self.__smaFast[-1] is None:
-			return 
-		elif self.__smaSlow is not None and self.__smaSlow[-1] is None:
-			return
-
 		bar = bars[self.__instrument]
 
 		# If a position was not opened, check if we should enter a long position.

@@ -1,0 +1,1 @@
+btc_symbol = "BTC"

@@ -26,11 +26,11 @@ import datetime
 class Feed(membf.BarFeed):
     """Class for json data
     """
-    def __init__(self, frequency=bar.Frequency.DAY, timezone=None, maxLen=None):
+    def __init__(self, frequency=bar.Frequency.HOUR, timezone=None, maxLen=None):
         if isinstance(timezone, int):
             raise Exception("timezone as an int parameter is not supported anymore. Please use a pytz timezone instead.")
 
-        if frequency not in [bar.Frequency.DAY, bar.Frequency.WEEK]:
+        if frequency not in [bar.Frequency.HOUR, bar.Frequency.WEEK]:
             raise Exception("Invalid frequency.")
 
         super(Feed, self).__init__(frequency, maxLen)

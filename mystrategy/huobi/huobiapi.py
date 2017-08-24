@@ -3,6 +3,8 @@ import requests
 import time
 from datetime import datetime
 import pdb
+import urllib
+import hashlib
 
 SYMBOL_BTCCNY = 'BTC_CNY'
 SYMBOL_LTCCNY = 'LTC_CNY'
@@ -53,6 +55,143 @@ class DataApi(object):
             print e
             return None
 
+
+HUOBI_TRADE_API = 'https://api.huobi.com/apiv3'
+
+COINTYPE_BTC = 1
+
+FUNCTIONCODE_GETACCOUNTINFO = 'get_account_info'
+FUNCTIONCODE_ORDERINFO = 'order_info'
+FUNCTIONCODE_BUY = 'buy'
+FUNCTIONCODE_SELL = 'sell'
+FUNCTIONCODE_BUYMARKET = 'buy_market'
+FUNCTIONCODE_SELLMARKET = 'sell_market'
+FUNCTIONCODE_CANCELORDER = 'cancel_order'
+
+class TradeApi(object):
+    def __init__(self):
+        self.accessKey = ''
+        self.secretKey = ''
+
+    def _signature(self, params):
+        params = sorted(params.iteritems(), key=lambda d:d[0], reverse=False)
+        message = urllib.urlencode(params)
+    
+        m = hashlib.md5()
+        m.update(message)
+        m.digest()
+
+        sig=m.hexdigest()
+        return sig    
+
+    def _processRequest(self, method_, params_, optional=None):
+        method = method_
+        params = params_
+        
+        time_ = time.time()
+        datetime_ = datetime.fromtimestamp(time_)
+        params['created'] = long(time_)
+        params['access_key'] = self.accessKey
+        params['secret_key'] = self.secretKey
+        params['method'] = method
+        
+        sign = self._signature(params)
+        params['sign'] = sign
+        del params['secret_key']
+        
+        if optional:
+            params.update(optional)
+        
+        payload = urllib.urlencode(params)
+
+        r = requests.post(HUOBI_TRADE_API, params=payload)
+        if r.status_code == 200:
+            data = r.json()
+            return datetime_, data
+        else:
+            return datetime_, None        
+    
+    def getAccountInfo(self, market='cny'):
+        method = FUNCTIONCODE_GETACCOUNTINFO
+        params = {}
+        
+        optional = {'market': market}
+        datetime_, data = self._processRequest(method, params, optional)
+        return datetime_, data
+
+    def getOrderInfo(self, id_, coinType=COINTYPE_BTC, market='cny'):
+        method = FUNCTIONCODE_ORDERINFO
+        params = {
+            'coin_type': coinType,
+            'id': id_
+        }
+        optional = {'market': market}
+        datetime_, data = self._processRequest(method, params, optional)
+        return datetime_, data
+
+    def buyLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+        method = FUNCTIONCODE_BUY
+        params = {
+            'coin_type': coinType,
+            'price': price,
+            'amount': quantity
+        }
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self._processRequest(method, params, optional)
+
+    def sellLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+        method = FUNCTIONCODE_SELL
+        params = {
+            'coin_type': coinType,
+            'price': price,
+            'amount': quantity
+        }
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self._processRequest(method, params, optional)
+
+    def buyMarket(self, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+        method = FUNCTIONCODE_BUYMARKET
+        params = {
+            'coin_type': coinType,
+            'amount': quantity
+        }
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self._processRequest(method, params, optional) 
+    
+    def sellMarket(self, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+        method = FUNCTIONCODE_SELLMARKET
+        params = {
+            'coin_type': coinType,
+            'amount': quantity
+        }
+        optional = {
+            'trade_password': tradePassword,
+            'trade_id': tradeId,
+            'market': market
+        }
+        return self._processRequest(method, params, optional)      
+
+    def cancelOrder(self, id_, coinType=COINTYPE_BTC, market='cny'):
+        method = FUNCTIONCODE_CANCELORDER
+        params = {
+            'coin_type': coinType,
+            'id': id_
+        }
+        optional = {'market': market}
+        return self._processRequest(method, params, optional)    
+
 class TradeApiFake(object):
     def __init__(self):
         self.__orderIdTmp = None
@@ -75,9 +214,9 @@ class TradeApiFake(object):
             total = self.__cashTmp
             share = 0
 
-        ret = {'total': total, 
-               'available_cny_display': self.__cashTmp, 
-               'available_btc_display':share}
+        ret = {'total':str(total), 
+               'available_cny_display':str(self.__cashTmp), 
+               'available_btc_display':str(share)}
         return ret
 
     def getOrderInfo(self, id_):
@@ -87,16 +226,16 @@ class TradeApiFake(object):
             total = vot + fee
         else:
             total = vot - fee
-        ret = {'id':self.__orderIdTmp, 
-               'type':self.__orderTypeTmp, 
-               'order_price':self.__requestPriceTmp, 
-               'order_amount':self.__requestQuantityTmp,
-               'processed_price':self.__requestPriceTmp,
-               'processed_amount':self.__requestQuantityTmp,
-               'vot':vot,
-               'fee':fee,
-               'total':total,
-               'status':2}
+        ret = {'id':str(self.__orderIdTmp), 
+               'type':str(self.__orderTypeTmp), 
+               'order_price':str(self.__requestPriceTmp), 
+               'order_amount':str(self.__requestQuantityTmp),
+               'processed_price':str(self.__requestPriceTmp),
+               'processed_amount':str(self.__requestQuantityTmp),
+               'vot':str(vot),
+               'fee':str(fee),
+               'total':str(total),
+               'status':'2'}
         return self.__dateTime, ret
 
     def buyMarket(self, quantity):
@@ -111,7 +250,7 @@ class TradeApiFake(object):
         fee = cost * self.__feeTmp
         self.__cashTmp -= cost + fee
         self.__dateTime = datetime.fromtimestamp(time.time())
-        ret = {'result':'success', 'id':self.__orderIdTmp}
+        ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
 
     def sellMarket(self, quantity):
@@ -125,7 +264,7 @@ class TradeApiFake(object):
         fee = cost * self.__feeTmp
         self.__cashTmp += cost - fee
         self.__dateTime = datetime.fromtimestamp(time.time())
-        ret = {'result':'success', 'id':self.__orderIdTmp}
+        ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
 
     def buyLimit(self, price, quantity):
@@ -138,7 +277,7 @@ class TradeApiFake(object):
         fee = cost * self.__feeTmp
         self.__cashTmp -= cost + fee
         self.__dateTime = datetime.fromtimestamp(time.time())
-        ret = {'result':'success', 'id':self.__orderIdTmp}
+        ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
         
 
@@ -152,5 +291,9 @@ class TradeApiFake(object):
         fee = cost * self.__feeTmp
         self.__cashTmp += cost - fee
         self.__dateTime = datetime.fromtimestamp(time.time())
-        ret = {'result':'success', 'id':self.__orderIdTmp}
+        ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
+
+    def cancelOrder(self, id_):
+        ret = {'result':'success'}
+        return ret
