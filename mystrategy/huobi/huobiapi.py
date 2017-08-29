@@ -10,10 +10,10 @@ SYMBOL_BTCCNY = 'BTC_CNY'
 SYMBOL_LTCCNY = 'LTC_CNY'
 SYMBOL_BTCUSD = 'BTC_USD'
 
-class DataApi(object):
+class BtcLtcDataApi(object):
     KLINE_SYMBOL_URL = {
         SYMBOL_BTCCNY: 'http://api.huobi.com/staticmarket/btc_kline_[period]_json.js',
-        SYMBOL_LTCCNY: 'http://api.huobi.com/staticmarket/btc_kline_[period]_json.js',
+        SYMBOL_LTCCNY: 'http://api.huobi.com/staticmarket/ltc_kline_[period]_json.js',
         SYMBOL_BTCUSD: 'http://api.huobi.com/usdmarket/btc_kline_[period]_json.js'
     }   
 
@@ -59,6 +59,7 @@ class DataApi(object):
 HUOBI_TRADE_API = 'https://api.huobi.com/apiv3'
 
 COINTYPE_BTC = 1
+COINTYPE_LTC = 2
 
 FUNCTIONCODE_GETACCOUNTINFO = 'get_account_info'
 FUNCTIONCODE_ORDERINFO = 'order_info'
@@ -68,7 +69,7 @@ FUNCTIONCODE_BUYMARKET = 'buy_market'
 FUNCTIONCODE_SELLMARKET = 'sell_market'
 FUNCTIONCODE_CANCELORDER = 'cancel_order'
 
-class TradeApi(object):
+class BtcLtcTradeApi(object):
     def __init__(self):
         self.accessKey = ''
         self.secretKey = ''
@@ -116,8 +117,7 @@ class TradeApi(object):
         params = {}
         
         optional = {'market': market}
-        datetime_, data = self._processRequest(method, params, optional)
-        return datetime_, data
+        return self._processRequest(method, params, optional)
 
     def getOrderInfo(self, id_, coinType=COINTYPE_BTC, market='cny'):
         method = FUNCTIONCODE_ORDERINFO
@@ -126,8 +126,7 @@ class TradeApi(object):
             'id': id_
         }
         optional = {'market': market}
-        datetime_, data = self._processRequest(method, params, optional)
-        return datetime_, data
+        return self._processRequest(method, params, optional)
 
     def buyLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
         method = FUNCTIONCODE_BUY
@@ -192,7 +191,7 @@ class TradeApi(object):
         optional = {'market': market}
         return self._processRequest(method, params, optional)    
 
-class TradeApiFake(object):
+class BtcLtcTradeApiFake(object):
     def __init__(self):
         self.__orderIdTmp = None
         self.__orderTypeTmp = None
@@ -202,12 +201,12 @@ class TradeApiFake(object):
         self.__cashTmp = 10000
         self.__isInPositionTmp = False
         self.__dateTime = None
-        self.__data = DataApi()
+        self.__data = BtcLtcDataApi()
 
     def getAccountInfo(self):
         #pdb.set_trace()
         if  self.__isInPositionTmp is True:
-            curBar = self.__data.getKline(SYMBOL_BTCCNY, '001', 1)
+            curBar = self.__data.getKline(SYMBOL_LTCCNY, '001', 1)
             total = self.__cashTmp + self.__requestQuantityTmp * float(curBar[0][4])
             share = self.__requestQuantityTmp
         else:
@@ -216,8 +215,10 @@ class TradeApiFake(object):
 
         ret = {'total':str(total), 
                'available_cny_display':str(self.__cashTmp), 
-               'available_btc_display':str(share)}
-        return ret
+               'available_btc_display':str(share),
+               'available_ltc_display':str(share)}
+
+        return datetime.fromtimestamp(time.time()), ret
 
     def getOrderInfo(self, id_):
         vot = self.__requestQuantityTmp * self.__requestPriceTmp
@@ -240,7 +241,7 @@ class TradeApiFake(object):
 
     def buyMarket(self, quantity):
         #pdb.set_trace()
-        curBar = self.__data.getKline(SYMBOL_BTCCNY, '001', 1)
+        curBar = self.__data.getKline(SYMBOL_LTCCNY, '001', 1)
         self.__isInPositionTmp = True
         self.__orderIdTmp = 1234
         self.__orderTypeTmp = 3
@@ -254,7 +255,7 @@ class TradeApiFake(object):
         return self.__dateTime, ret
 
     def sellMarket(self, quantity):
-        curBar = self.__data.getKline(SYMBOL_BTCCNY, '001', 1)
+        curBar = self.__data.getKline(SYMBOL_LTCCNY, '001', 1)
         self.__isInPositionTmp = False
         self.__orderIdTmp = 1235
         self.__orderTypeTmp = 4
@@ -296,4 +297,4 @@ class TradeApiFake(object):
 
     def cancelOrder(self, id_):
         ret = {'result':'success'}
-        return ret
+        return datetime.fromtimestamp(time.time()), ret

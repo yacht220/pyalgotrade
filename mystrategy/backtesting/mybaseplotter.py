@@ -11,8 +11,8 @@ from mystrategy.huobi import huobiapi
 #feed = yahoofeed.Feed()
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
-huobi = huobiapi.DataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_BTCCNY, '060', 300)
+huobi = huobiapi.BtcLtcDataApi()
+kline = huobi.getKline(huobiapi.SYMBOL_LTCCNY, '060', 100)
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson("btc", kline)
@@ -23,9 +23,13 @@ brk = mybroker.MyBroker(10000, feed, commission)
 #signal = mysignal.MyPriceSmaCrossOverSignal()
 #signal = mysignal.MyPriceSmaUpDownSignal()
 signal = mysignal.MySmaCrossOverUpDownSignal()
+#signal = mysignal.MyEmaCrossOverUpDownSignal()
+#signal = mysignal.MyQuickAdvanceAndDeclineSignal()
+#signal = mysignal.MySmaUpAndDownSignal()
+#signal = mysignal.MySimpleMacdCrossOver()
 
 # Evaluate the strategy with the feed's bars.
-myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, "btc", signal, 10, 20)
+myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, "btc", signal, 12, 26, 12, 26, 9)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()

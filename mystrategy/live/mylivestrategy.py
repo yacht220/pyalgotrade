@@ -3,25 +3,45 @@ from mystrategy.live import mylivebroker
 from pyalgotrade import strategy
 from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
-from mystrategy.backtesting import mysignal
+from pyalgotrade.technical import macd
+from mystrategy.common import mysignal
+from mystrategy import common
 #from mystrategy.backtesting import mybroker
 #from pyalgotrade.broker import backtesting
 import pdb
 import math
 
 class Strategy(strategy.BaseStrategy):
-    def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None):
+    def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
+                 emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
         super(Strategy, self).__init__(feed, brk)
-        self.__instrument = "BTC"
+        self.__instrument = common.ltc_symbol
         self.__prices = feed[self.__instrument].getCloseDataSeries()
         if smaPeriodFast is not None:
             self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
         else:
             self.__smaFast = None
+
         if smaPeriodSlow is not None:
             self.__smaSlow = ma.SMA(self.__prices, smaPeriodSlow)
         else:
             self.__smaSlow = None
+
+        if emaPeriodFast is not None:
+            self.__emaFast = ma.EMA(self.__prices, emaPeriodFast)
+        else:
+            self.__emaFast = None
+
+        if emaPeriodSlow is not None:
+            self.__emaSlow = ma.EMA(self.__prices, emaPeriodSlow)
+        else:
+            self.__emaSlow = None
+
+        if emaPeriodFast is not None and emaPeriodSlow is not None and emaPeriodSignal is not None:
+            self.__macd = macd.MACD(self.__prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
+        else:
+            self.__macd = None
+
         self.__bid = None
         self.__ask = None
         self.__position = None
@@ -74,6 +94,9 @@ class Strategy(strategy.BaseStrategy):
 
         bar = bars[self.__instrument]
         self.info("Time: %s. Price: %s. Volume: %s." % (bar.getDateTime(), bar.getClose(), bar.getVolume()))
+        if self.getFeed().getInit() is True:
+            self.info("Bar feed is in init")
+            return
 
         self._getOrderBookUpdate()
         '''for i in self.__prices:
@@ -103,16 +126,16 @@ class Strategy(strategy.BaseStrategy):
 
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
-            #if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow):
+            if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 #self.__buyPrice = bar.getClose()
-                shares = self._truncFloat(float(self.getBroker().getCash() * 0.9 / self.__ask), 4)
+                shares = self._truncFloat(float(self.getBroker().getCash() * 0.05 / self.__ask), 4)
                 self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__ask))
                 # Enter a buy market order. The order is good till canceled.
                 #self.__position = self.enterLong(self.__instrument, shares, True)
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
-            #if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow):
+            if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 #self.__sellPrice = bar.getClose()
                 self.info("Exit signal. Sell at %s CNY" % (self.__bid))
                 #self.__position.exitMarket()
@@ -123,7 +146,7 @@ def main():
     #brk = mytestbroker.PaperTradingBroker(10000, barFeed, 0.002)
     brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()
-    strat = Strategy(barFeed, brk, signal, 3, 5)
+    strat = Strategy(barFeed, brk, signal, 12, 26)
     
     strat.run()
 

@@ -91,7 +91,7 @@ class MyOrder(object):
 class MyLiveBroker(broker.Broker):
     def __init__(self):
         super(MyLiveBroker, self).__init__()
-        self.__huobitrade = huobiapi.TradeApiFake()
+        self.__huobitrade = huobiapi.BtcLtcTradeApi()
         self.__stop = False
         self.__activeOrders = {}
         self.__total = 0
@@ -110,10 +110,13 @@ class MyLiveBroker(broker.Broker):
 
     def _refreshAccountBalance(self):
         self.__stop  = True
-        jsonData = self.__huobitrade.getAccountInfo()
+        timestamp, jsonData = self.__huobitrade.getAccountInfo()
+        if jsonData.has_key('code'):
+            raise Exception("Get account info failed! Error code %s" % jsonData['code'])
+
         self.__total = float(jsonData['total'])
         self.__cash = float(jsonData['available_cny_display'])
-        self.__shares = {'btc':float(jsonData['available_btc_display'])}
+        self.__shares = {'ltc':float(jsonData['available_ltc_display'])}
         self.__stop = False
 
     def _orderStatusUpdate(self, orders):
@@ -137,7 +140,7 @@ class MyLiveBroker(broker.Broker):
             self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
 
     def _getOrderInfo(self, id_):
-        timestamp, jsonData = self.__huobitrade.getOrderInfo(id_)
+        timestamp, jsonData = self.__huobitrade.getOrderInfo(id_, huobiapi.COINTYPE_LTC)
         order = MyOrder()
         order.setId(long(jsonData['id']))
         order.setType(int(jsonData['type']))
@@ -153,9 +156,9 @@ class MyLiveBroker(broker.Broker):
         return order
 
     def _buyMarket(self, quantity):
-        timestamp, jsonData = self.__huobitrade.buyMarket(quantity)
+        timestamp, jsonData = self.__huobitrade.buyMarket(quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
-            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
+            raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
 
         orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
@@ -164,9 +167,9 @@ class MyLiveBroker(broker.Broker):
         return huobiOrder
 
     def _sellMarket(self, quantity):
-        timestamp, jsonData = self.__huobitrade.sellMarket(quantity)
+        timestamp, jsonData = self.__huobitrade.sellMarket(quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
-            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
+            raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
 
         orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
@@ -175,9 +178,9 @@ class MyLiveBroker(broker.Broker):
         return huobiOrder
 
     def _buyLimit(self, price, quantity):
-        timestamp, jsonData = self.__huobitrade.buyLimit(price, quantity)
+        timestamp, jsonData = self.__huobitrade.buyLimit(price, quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
-            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
+            raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
 
         orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
@@ -186,9 +189,9 @@ class MyLiveBroker(broker.Broker):
         return huobiOrder
 
     def _sellLimit(self, price, quantity):
-        timestamp, jsonData = self.__huobitrade.sellLimit(price, quantity)
+        timestamp, jsonData = self.__huobitrade.sellLimit(price, quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
-            raise Exception("Buy market order submission failed! Error code %s, message %s" % jsonData['code'], jsaonData['message'])
+            raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
 
         orderId = long(jsonData['id'])
         huobiOrder = MyOrder()
@@ -197,9 +200,9 @@ class MyLiveBroker(broker.Broker):
         return huobiOrder
 
     def _cancelOrder(self, id_):
-        timestamp, jsonData = self.__huobitrade.cancelOrder(id_)
+        timestamp, jsonData = self.__huobitrade.cancelOrder(id_, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
-            mylivebrklogger.info("Failed to cancel order %s. Error code %s, message %s" % id, jsonData['code'], jsaonData['message'])
+            mylivebrklogger.info("Failed to cancel order %s. Error code %s" % id, jsonData['code'])
             return False
 
         return True        
@@ -243,7 +246,7 @@ class MyLiveBroker(broker.Broker):
 
         self._orderStatusUpdate(ordersToProcess)
         self._refreshAccountBalance()
-        mylivebrklogger.info("Test equity %.2f" % self.getEquity())
+        mylivebrklogger.info("Current equity %.2f" % self.getEquity())
 
     def peekDateTime(self):
         return None
