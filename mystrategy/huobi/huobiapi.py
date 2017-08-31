@@ -61,13 +61,16 @@ HUOBI_TRADE_API = 'https://api.huobi.com/apiv3'
 COINTYPE_BTC = 1
 COINTYPE_LTC = 2
 
+
 FUNCTIONCODE_GETACCOUNTINFO = 'get_account_info'
+FUNCTIONCODE_GETORDERS = 'get_orders'
 FUNCTIONCODE_ORDERINFO = 'order_info'
 FUNCTIONCODE_BUY = 'buy'
 FUNCTIONCODE_SELL = 'sell'
 FUNCTIONCODE_BUYMARKET = 'buy_market'
 FUNCTIONCODE_SELLMARKET = 'sell_market'
 FUNCTIONCODE_CANCELORDER = 'cancel_order'
+FUNCTIONCODE_GETNEWDEALORDERS = 'get_new_deal_orders'
 
 class BtcLtcTradeApi(object):
     def __init__(self):
@@ -116,6 +119,12 @@ class BtcLtcTradeApi(object):
         method = FUNCTIONCODE_GETACCOUNTINFO
         params = {}
         
+        optional = {'market': market}
+        return self._processRequest(method, params, optional)
+
+    def getOrders(self, coinType=COINTYPE_BTC, market='cny'):
+        method = FUNCTIONCODE_GETORDERS
+        params = {'coin_type': coinType}
         optional = {'market': market}
         return self._processRequest(method, params, optional)
 
@@ -190,6 +199,14 @@ class BtcLtcTradeApi(object):
         }
         optional = {'market': market}
         return self._processRequest(method, params, optional)    
+
+    def getNewDealOrders(self, coinType=COINTYPE_BTC, market='cny'):
+        method = FUNCTIONCODE_GETNEWDEALORDERS
+        params = {
+            'coin_type': coinType
+        }
+        optional = {'market': market}
+        return self._processRequest(method, params, optional)
 
 class BtcLtcTradeApiFake(object):
     def __init__(self):

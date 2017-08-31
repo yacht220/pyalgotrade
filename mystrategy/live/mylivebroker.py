@@ -109,7 +109,7 @@ class MyLiveBroker(broker.Broker):
         del self.__activeOrders[order.getId()]
 
     def _refreshAccountBalance(self):
-        self.__stop  = True
+        #self.__stop  = True
         timestamp, jsonData = self.__huobitrade.getAccountInfo()
         if jsonData.has_key('code'):
             raise Exception("Get account info failed! Error code %s" % jsonData['code'])
@@ -117,7 +117,7 @@ class MyLiveBroker(broker.Broker):
         self.__total = float(jsonData['total'])
         self.__cash = float(jsonData['available_cny_display'])
         self.__shares = {'ltc':float(jsonData['available_ltc_display'])}
-        self.__stop = False
+        #self.__stop = False
 
     def _orderStatusUpdate(self, orders):
         for order in orders:

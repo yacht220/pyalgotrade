@@ -145,7 +145,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         assert(len(bar) == 2)
         curdatetime = self.__getTradeDateTime(bar[1][0])
         if (curdatetime == self.__prevTradeDateTime):
-                time.sleep(300)
+                time.sleep(60)
                 return False
 
         prevdatetime = self.__getTradeDateTime(bar[0][0])        
@@ -207,6 +207,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
     # This may raise.
     def start(self):
+	mylivefeedlogger.info("Start feed")
         super(LiveTradeFeed, self).start()
         self.__init = True
 
@@ -228,6 +229,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
     # This should not raise.
     def stop(self):
+	mylivefeedlogger.info("Stop feed")
         self.__stopped = True
 
     # This should not raise.

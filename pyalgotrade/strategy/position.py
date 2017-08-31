@@ -366,7 +366,10 @@ class Position(object):
         self.__exitOrder = exitOrder
 
     def onOrderEvent(self, orderEvent):
-        self.__updatePosTracker(orderEvent)
+        # Comment this code line since "filled quantity > 0" assertion will fail in live trade.
+        # Filled quantity could be 0 when buy / sell limit order has not been executed in live trade.
+        # TODO: Set condition if live trade or filled quantity is 0, skip following code.
+        #self.__updatePosTracker(orderEvent)
 
         order = orderEvent.getOrder()
         if not order.isActive():
