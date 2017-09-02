@@ -12,7 +12,7 @@ from mystrategy.huobi import huobiapi
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.BtcLtcDataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_LTCCNY, '060', 100)
+kline = huobi.getKline(huobiapi.SYMBOL_LTCCNY, '060', 500)
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson("btc", kline)
@@ -26,7 +26,7 @@ signal = mysignal.MySmaCrossOverUpDownSignal()
 #signal = mysignal.MyEmaCrossOverUpDownSignal()
 #signal = mysignal.MyQuickAdvanceAndDeclineSignal()
 #signal = mysignal.MySmaUpAndDownSignal()
-#signal = mysignal.MySimpleMacdCrossOver()
+#signal = mysignal.MyMacdCrossOverUpDownSignal()
 
 # Evaluate the strategy with the feed's bars.
 myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, "btc", signal, 12, 26, 12, 26, 9)

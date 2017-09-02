@@ -3,7 +3,7 @@ from mystrategy.common import mylogger
 
 mysignallogger = mylogger.getMyLogger("mysingal")
 
-def isUp(sma, period = 3):
+def isUp(sma, period = 2):
     assert(period >= 2)
     up = True
     if sma[-2] is None:
@@ -60,10 +60,16 @@ class MyPriceSmaUpDownSignal(object):
         pass
 
     def enterLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
-        return bar.getPrice() > smaFast[-1] and smaIsUp(smaFast)
+        if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
+            return False
+
+        return smaFast[-1] > smaSlow[-1] and isUp(smaFast, 2) and isUp(smaSlow, 2)
 
     def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
-        return bar.getPrice() < smaFast[-1]
+        if smaFast is None or smaFast[-1] is None:
+            return False
+
+        return bar.getPrice() < smaFast[-1] and isDown(smaFast, 2)
 
 class MySmaCrossOverUpDownSignal(object):
     def __init__(self):
@@ -79,7 +85,6 @@ class MySmaCrossOverUpDownSignal(object):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
         return cross.cross_below(smaFast, smaSlow) > 0
-        #return smaFast[-1] < smaSlow[-1] and isDown(smaFast, 2) and isDown(smaSlow, 2)
 
 class MyQuickAdvanceAndDeclineSignal(object):
     def __init__(self):
@@ -125,14 +130,20 @@ class MySmaUpAndDownSignal(object):
 
         return smaIsDown(smaFast, 2)
 
-class MySimpleMacdCrossOver(object):
+class MyMacdCrossOverUpDownSignal(object):
     def __init__(self):
         pass
 
     def enterLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
-        return cross.cross_above(macd, macd.getSignal()) > 0
+        if macd is None or macd[-1] is None or macd.getSignal() is None or macd.getSignal()[-1] is None:
+            return False
+            
+        return macd[-1] > macd.getSignal()[-1] > 0 and isUp(macd) and isUp(macd.getSignal())
 
     def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
+        if macd is None or macd[-1] is None or macd.getSignal() is None or macd.getSignal()[-1] is None:
+            return False
+
         return cross.cross_below(macd, macd.getSignal()) > 0
 
 class MyEmaCrossOverUpDownSignal(object):
