@@ -1,6 +1,7 @@
 from pyalgotrade import broker
 from mystrategy.huobi import huobiapi
 from mystrategy.common import mylogger
+from mystrategy import common
 
 mylivebrklogger = mylogger.getMyLogger("mylivebroker")
 
@@ -116,7 +117,7 @@ class MyLiveBroker(broker.Broker):
 
         self.__total = float(jsonData['total'])
         self.__cash = float(jsonData['available_cny_display'])
-        self.__shares = {'ltc':float(jsonData['available_ltc_display'])}
+        self.__shares = {common.ltc_symbol:float(jsonData['available_ltc_display'])}
         #self.__stop = False
 
     def _orderStatusUpdate(self, orders):
@@ -216,6 +217,8 @@ class MyLiveBroker(broker.Broker):
                 huobiOrder = self._buyLimit(order.getLimitPrice(), order.getQuantity())
             else:
                 huobiOrder = self._sellLimit(order.getLimitPrice(), order.getQuantity())
+
+            mylivebrklogger.info("Order id %s" % huobiOrder.getId())
             order.setSubmitted(huobiOrder.getId(), huobiOrder.getDateTime())
             self._registerOrder(order)
             order.switchState(broker.Order.State.SUBMITTED)

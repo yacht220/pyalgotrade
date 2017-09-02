@@ -237,7 +237,7 @@ class BtcLtcTradeApiFake(object):
 
         return datetime.fromtimestamp(time.time()), ret
 
-    def getOrderInfo(self, id_):
+    def getOrderInfo(self, id_, coinType=COINTYPE_BTC):
         vot = self.__requestQuantityTmp * self.__requestPriceTmp
         fee = vot * self.__feeTmp
         if self.__isInPositionTmp is True:
@@ -256,7 +256,7 @@ class BtcLtcTradeApiFake(object):
                'status':'2'}
         return self.__dateTime, ret
 
-    def buyMarket(self, quantity):
+    def buyMarket(self, quantity, coinType=COINTYPE_BTC):
         #pdb.set_trace()
         curBar = self.__data.getKline(SYMBOL_LTCCNY, '001', 1)
         self.__isInPositionTmp = True
@@ -271,7 +271,7 @@ class BtcLtcTradeApiFake(object):
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
 
-    def sellMarket(self, quantity):
+    def sellMarket(self, quantity, coinType=COINTYPE_BTC):
         curBar = self.__data.getKline(SYMBOL_LTCCNY, '001', 1)
         self.__isInPositionTmp = False
         self.__orderIdTmp = 1235
@@ -285,7 +285,7 @@ class BtcLtcTradeApiFake(object):
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
 
-    def buyLimit(self, price, quantity):
+    def buyLimit(self, price, quantity, coinType=COINTYPE_BTC):
         self.__isInPositionTmp = True
         self.__orderIdTmp = 1234
         self.__orderTypeTmp = 3
@@ -299,7 +299,7 @@ class BtcLtcTradeApiFake(object):
         return self.__dateTime, ret
         
 
-    def sellLimit(self, price, quantity):
+    def sellLimit(self, price, quantity, coinType=COINTYPE_BTC):
         self.__isInPositionTmp = False
         self.__orderIdTmp = 1235
         self.__orderTypeTmp = 4
@@ -312,6 +312,6 @@ class BtcLtcTradeApiFake(object):
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
 
-    def cancelOrder(self, id_):
+    def cancelOrder(self, id_, coinType=COINTYPE_BTC):
         ret = {'result':'success'}
         return datetime.fromtimestamp(time.time()), ret

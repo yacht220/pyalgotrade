@@ -67,7 +67,7 @@ class Strategy(strategy.BaseStrategy):
     def onEnterOk(self, position):
         filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
         #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))
-        self.info("Position opened at %s" % filledPrice)
+        self.info("Position opened at %s" % filledPrice) 
 
     def onEnterCanceled(self, position):
         self.info("Position entry canceled")
@@ -139,6 +139,10 @@ class Strategy(strategy.BaseStrategy):
                 #self.__sellPrice = bar.getClose()
                 self.info("Exit signal. Sell at %s CNY" % (self.__bid))
                 #self.__position.exitMarket()
+
+                # Actual position shares should be obtained from account info
+                # since commission would be subtracted from filled quantity in previous buy order.
+                self.__position.setShares(self.getBroker().getShares(self.__instrument))
                 self.__position.exitLimit(self.__bid)
 
 def main():

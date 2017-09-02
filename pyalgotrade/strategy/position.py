@@ -216,6 +216,9 @@ class Position(object):
         """
         return self.__shares
 
+    def setShares(self, shares):
+        self.__shares = shares
+
     def entryActive(self):
         """Returns True if the entry order is active."""
         return self.__entryOrder is not None and self.__entryOrder.isActive()
