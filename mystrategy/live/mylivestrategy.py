@@ -128,7 +128,7 @@ class Strategy(strategy.BaseStrategy):
         if self.__position is None:
             if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 #self.__buyPrice = bar.getClose()
-                shares = self._truncFloat(float(self.getBroker().getCash() * 0.99 / self.__ask), 4)
+                shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), 4)
                 self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__ask))
                 # Enter a buy market order. The order is good till canceled.
                 #self.__position = self.enterLong(self.__instrument, shares, True)
@@ -147,7 +147,6 @@ class Strategy(strategy.BaseStrategy):
 
 def main():
     barFeed = mylivefeed.LiveTradeFeed()
-    #brk = mytestbroker.PaperTradingBroker(10000, barFeed, 0.002)
     brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()
     strat = Strategy(barFeed, brk, signal, 12, 26)

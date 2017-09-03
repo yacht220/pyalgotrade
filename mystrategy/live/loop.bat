@@ -1,1 +1,0 @@
-for /l %%i in (1,1,100) do python .\tutorial_bitstamp_1.py

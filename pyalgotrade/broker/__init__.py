@@ -38,8 +38,11 @@ class InstrumentTraits(object):
     def roundQuantity(self, quantity):
         raise NotImplementedError()
 
-
 class IntegerTraits(InstrumentTraits):
+    def roundQuantity(self, quantity):
+        return int(quantity)
+
+class FloatTraits(InstrumentTraits):
     def roundQuantity(self, quantity):
         return float(quantity)
 
@@ -323,6 +326,18 @@ class Order(object):
 
         self.__executionInfo = orderExecutionInfo
         self.__filled = self.getInstrumentTraits().roundQuantity(self.__filled + orderExecutionInfo.getQuantity())
+        self.__commissions += orderExecutionInfo.getCommission()
+
+        if self.getRemaining() == 0:
+            self.switchState(Order.State.FILLED)
+        else:
+            assert(not self.__allOrNone)
+            self.switchState(Order.State.PARTIALLY_FILLED)
+    
+    # Modified for live trading, e.g huobi.
+    def addExecutionInfoLive(self, orderExecutionInfo):
+        self.__executionInfo = orderExecutionInfo
+        self.__filled = self.getInstrumentTraits().roundQuantity(orderExecutionInfo.getQuantity())
         self.__commissions += orderExecutionInfo.getCommission()
 
         if self.getRemaining() == 0:

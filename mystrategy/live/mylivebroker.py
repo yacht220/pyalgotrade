@@ -130,7 +130,7 @@ class MyLiveBroker(broker.Broker):
             #TODO check the status
 
             orderExecutionInfo = broker.OrderExecutionInfo(filledPrice, abs(filledQuantity), fee, dateTime)
-            order.addExecutionInfo(orderExecutionInfo)
+            order.addExecutionInfoLive(orderExecutionInfo)
             if not order.isActive():
                 self._unregisterOrder(order)
 

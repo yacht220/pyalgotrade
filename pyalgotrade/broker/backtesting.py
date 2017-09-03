@@ -286,7 +286,8 @@ class Broker(broker.Broker):
         return self.__barFeed.getCurrentDateTime()
 
     def getInstrumentTraits(self, instrument):
-        return broker.IntegerTraits()
+        #return broker.IntegerTraits()
+        return broker.FloatTraits()
 
     def getShares(self, instrument):
         return self.__shares.get(instrument, 0)
