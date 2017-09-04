@@ -5,6 +5,7 @@ import mybasestrategy
 import myfeed
 import mybroker
 from mystrategy.common import mysignal
+from mystrategy import common
 from mystrategy.huobi import huobiapi
 
 # Load the yahoo feed from the CSV file
@@ -12,10 +13,10 @@ from mystrategy.huobi import huobiapi
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.BtcLtcDataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_LTCCNY, '060', 500)
+kline = huobi.getKline(huobiapi.SYMBOL_LTCCNY, '060', 2000)
 #print kline
 feed = myfeed.Feed()
-feed.addBarsFromJson("btc", kline)
+feed.addBarsFromJson(common.ltc_symbol, kline)
 
 commission = backtesting.TradePercentage(0.002)
 brk = mybroker.MyBroker(10000, feed, commission)
@@ -29,7 +30,7 @@ signal = mysignal.MySmaCrossOverUpDownSignal()
 #signal = mysignal.MyMacdCrossOverUpDownSignal()
 
 # Evaluate the strategy with the feed's bars.
-myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, "btc", signal, 12, 26, 12, 26, 9)
+myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, common.ltc_symbol, signal, 12, 26, 12, 26, 9)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()
@@ -37,9 +38,9 @@ myStrategy.attachAnalyzer(returnsAnalyzer)
 # Attach the plotter to the strategy.
 plt = plotter.StrategyPlotter(myStrategy)
 # Include the SMA in the instrument's subplot to get it displayed along with the closing prices.
-plt.getInstrumentSubplot("btc").addDataSeries("SMAFast", myStrategy.getSMAFast())
+plt.getInstrumentSubplot(common.ltc_symbol).addDataSeries("SMAFast", myStrategy.getSMAFast())
 if myStrategy.getSMASlow() is not None:
-	plt.getInstrumentSubplot("btc").addDataSeries("SMASlow", myStrategy.getSMASlow())
+	plt.getInstrumentSubplot(common.ltc_symbol).addDataSeries("SMASlow", myStrategy.getSMASlow())
 
 # Plot the simple returns on each bar.
 plt.getOrCreateSubplot("returns").addDataSeries("Simple returns", returnsAnalyzer.getReturns())
