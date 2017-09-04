@@ -29,7 +29,7 @@ def isDown(sma, period = 2):
     iter_ = 2
     while iter_ <= period:
         if sma[-iter_] < next_:
-            up = False
+            down = False
             break
         next_ = sma[-iter_]
         iter_ += 1
@@ -79,12 +79,12 @@ class MySmaCrossOverUpDownSignal(object):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
 
-        return smaFast[-1] > smaSlow[-1] and isUp(smaFast, 2) and isUp(smaSlow, 2)
+        return smaFast[-1] > smaSlow[-1] and isUp(smaFast, 3) and isUp(smaSlow, 3)
 
     def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
-        return cross.cross_below(smaFast, smaSlow) > 0
+        return cross.cross_below(smaFast, smaSlow) > 0 or isDown(smaFast, 5)
 
 class MyQuickAdvanceAndDeclineSignal(object):
     def __init__(self):
