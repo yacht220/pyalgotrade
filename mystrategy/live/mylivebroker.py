@@ -109,17 +109,6 @@ class MyLiveBroker(broker.Broker):
         assert(order.getId() is not None)
         del self.__activeOrders[order.getId()]
 
-    def _refreshAccountBalance(self):
-        #self.__stop  = True
-        timestamp, jsonData = self.__huobitrade.getAccountInfo()
-        if jsonData.has_key('code'):
-            raise Exception("Get account info failed! Error code %s" % jsonData['code'])
-
-        self.__total = float(jsonData['total'])
-        self.__cash = float(jsonData['available_cny_display'])
-        self.__shares = {common.ltc_symbol:float(jsonData['available_ltc_display'])}
-        #self.__stop = False
-
     def _orderStatusUpdate(self, orders):
         for order in orders:
             huobiOrder = self._getOrderInfo(order.getId())
@@ -179,6 +168,7 @@ class MyLiveBroker(broker.Broker):
         return huobiOrder
 
     def _buyLimit(self, price, quantity):
+        #self.__huobitrade = huobiapi.BtcLtcTradeApiFake()
         timestamp, jsonData = self.__huobitrade.buyLimit(price, quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
             raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
@@ -190,6 +180,7 @@ class MyLiveBroker(broker.Broker):
         return huobiOrder
 
     def _sellLimit(self, price, quantity):
+        #self.__huobitrade = huobiapi.BtcLtcTradeApi()
         timestamp, jsonData = self.__huobitrade.sellLimit(price, quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
             raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
@@ -207,6 +198,17 @@ class MyLiveBroker(broker.Broker):
             return False
 
         return True        
+
+    def _refreshAccountBalance(self):
+        #self.__stop  = True
+        timestamp, jsonData = self.__huobitrade.getAccountInfo()
+        if jsonData.has_key('code'):
+            raise Exception("Get account info failed! Error code %s" % jsonData['code'])
+
+        self.__total = float(jsonData['total'])
+        self.__cash = float(jsonData['available_cny_display'])
+        self.__shares = {common.ltc_symbol:float(jsonData['available_ltc_display'])}
+        #self.__stop = False
 
     def submitOrder(self, order):
         if order.isInitial():

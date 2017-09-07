@@ -120,8 +120,6 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__prevTradeDateTime = None
         self.__stopped = False
         self.__huobidata = huobiapi.BtcLtcDataApi()
-        
-        #self.__orderBookUpdateEvent = observer.Event()
 
     def __dispatchImpl(self, eventFilter):
         # Preprocess history bar feeds
@@ -143,6 +141,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
         bar = self.__huobidata.getKline(huobiapi.SYMBOL_LTCCNY, LiveTradeFeed.KLINE_PERIOD, 2)
         assert(len(bar) == 2)
+        mylivefeedlogger.info("Latest price %s" % float(bar[1][4]))
         curdatetime = self.__getTradeDateTime(bar[1][0])
         if (curdatetime == self.__prevTradeDateTime):
                 time.sleep(60)
@@ -155,7 +154,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__prevTradeDateTime = curdatetime
         self.__barDicts.append(barDict)
 
-        mylivefeedlogger.info("LiveTradeFeed.__dispatchImpl:")
+        mylivefeedlogger.info("LiveTradeFeed.__dispatchImpl():")
         for tb in self.__barDicts:
             mylivefeedlogger.info("  %s, %s" % (tb[common.ltc_symbol].getDateTime(), tb[common.ltc_symbol].getClose()))
 
@@ -238,14 +237,3 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
     def eof(self):
         return self.__stopped
-
-    '''def getOrderBookUpdateEvent(self):
-        """
-        Returns the event that will be emitted when the orderbook gets updated.
-
-        Eventh handlers should receive one parameter:
-         1. A :class:`pyalgotrade.bitstamp.wsclient.OrderBookUpdate` instance.
-
-        :rtype: :class:`pyalgotrade.observer.Event`.
-        """
-        return self.__orderBookUpdateEvent'''

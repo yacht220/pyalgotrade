@@ -214,7 +214,8 @@ class BtcLtcTradeApiFake(object):
         self.__orderTypeTmp = None
         self.__requestQuantityTmp = None
         self.__requestPriceTmp = None
-        self.__feeTmp = 0.002
+        self.__commission = 0.002
+        self.__fee = 0
         self.__cashTmp = 10000
         self.__isInPositionTmp = False
         self.__dateTime = None
@@ -224,7 +225,7 @@ class BtcLtcTradeApiFake(object):
         #pdb.set_trace()
         if  self.__isInPositionTmp is True:
             curBar = self.__data.getKline(SYMBOL_LTCCNY, '001', 1)
-            total = self.__cashTmp + self.__requestQuantityTmp * float(curBar[0][4])
+            total = self.__cashTmp + self.__requestQuantityTmp * float(curBar[0][4]) - self.__fee
             share = self.__requestQuantityTmp
         else:
             total = self.__cashTmp
@@ -239,11 +240,7 @@ class BtcLtcTradeApiFake(object):
 
     def getOrderInfo(self, id_, coinType=COINTYPE_BTC):
         vot = self.__requestQuantityTmp * self.__requestPriceTmp
-        fee = vot * self.__feeTmp
-        if self.__isInPositionTmp is True:
-            total = vot + fee
-        else:
-            total = vot - fee
+        total = vot
         ret = {'id':str(self.__orderIdTmp), 
                'type':str(self.__orderTypeTmp), 
                'order_price':str(self.__requestPriceTmp), 
@@ -251,7 +248,7 @@ class BtcLtcTradeApiFake(object):
                'processed_price':str(self.__requestPriceTmp),
                'processed_amount':str(self.__requestQuantityTmp),
                'vot':str(vot),
-               'fee':str(fee),
+               'fee':str(self.__fee),
                'total':str(total),
                'status':'2'}
         return self.__dateTime, ret
@@ -265,8 +262,8 @@ class BtcLtcTradeApiFake(object):
         self.__requestPriceTmp = float(curBar[0][4])
         self.__requestQuantityTmp = quantity
         cost = self.__requestPriceTmp * self.__requestQuantityTmp
-        fee = cost * self.__feeTmp
-        self.__cashTmp -= cost + fee
+        self.__fee = cost * self.__commission
+        self.__cashTmp -= cost
         self.__dateTime = datetime.fromtimestamp(time.time())
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
@@ -279,8 +276,8 @@ class BtcLtcTradeApiFake(object):
         self.__requestPriceTmp = float(curBar[0][4])
         self.__requestQuantityTmp = quantity
         cost = self.__requestPriceTmp * self.__requestQuantityTmp
-        fee = cost * self.__feeTmp
-        self.__cashTmp += cost - fee
+        self.__fee = cost * self.__commission
+        self.__cashTmp += cost - self.__fee
         self.__dateTime = datetime.fromtimestamp(time.time())
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
@@ -292,8 +289,8 @@ class BtcLtcTradeApiFake(object):
         self.__requestPriceTmp = price
         self.__requestQuantityTmp = quantity
         cost = self.__requestPriceTmp * self.__requestQuantityTmp
-        fee = cost * self.__feeTmp
-        self.__cashTmp -= cost + fee
+        self.__fee = cost * self.__commission
+        self.__cashTmp -= cost
         self.__dateTime = datetime.fromtimestamp(time.time())
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret
@@ -306,8 +303,8 @@ class BtcLtcTradeApiFake(object):
         self.__requestPriceTmp = price
         self.__requestQuantityTmp = quantity
         cost = self.__requestPriceTmp * self.__requestQuantityTmp
-        fee = cost * self.__feeTmp
-        self.__cashTmp += cost - fee
+        self.__fee = cost * self.__commission
+        self.__cashTmp += cost - self.__fee
         self.__dateTime = datetime.fromtimestamp(time.time())
         ret = {'result':'success', 'id':str(self.__orderIdTmp)}
         return self.__dateTime, ret

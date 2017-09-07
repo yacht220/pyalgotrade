@@ -6,8 +6,6 @@ from pyalgotrade.technical import cross
 from pyalgotrade.technical import macd
 from mystrategy.common import mysignal
 from mystrategy import common
-#from mystrategy.backtesting import mybroker
-#from pyalgotrade.broker import backtesting
 import pdb
 import math
 
@@ -46,12 +44,7 @@ class Strategy(strategy.BaseStrategy):
         self.__ask = None
         self.__position = None
         self.__posSize = 0.05
-        #self.__filledBuyPrice = None
-        #self.__filledSellPrice = None
         self.__signal = signal
-
-        # Subscribe to order book update events to get bid/ask prices to trade.
-        #feed.getOrderBookUpdateEvent().subscribe(self.__onOrderBookUpdate)
 
     def _truncFloat(self, floatvalue, decnum):
         tmp = int('1' + '0' * decnum)
@@ -87,11 +80,6 @@ class Strategy(strategy.BaseStrategy):
         #pdb.set_trace()
         self.info("Current portfolio value %.2f CNY" % self.getResult())
 
-        '''if self.__smaFast[-1] is None:
-            return 
-        elif self.__smaSlow is not None and self.__smaSlow[-1] is None:
-            return'''
-
         bar = bars[self.__instrument]
         self.info("Time: %s. Price: %s. Volume: %s." % (bar.getDateTime(), bar.getClose(), bar.getVolume()))
         if self.getFeed().getInit() is True:
@@ -99,47 +87,17 @@ class Strategy(strategy.BaseStrategy):
             return
 
         self._getOrderBookUpdate()
-        '''for i in self.__prices:
-            print "prices %s" % i
-
-        for j in self.__smafast:
-            print "smafast %s" % j
-
-        for k in self.__smaslow:
-            print "smaslow %s" % k'''
-
-        # Wait until we get the current bid/ask prices.
-        '''if self.__ask is None:
-            return'''
-
-        # If a position was not opened, check if we should enter a long position.
-        '''if self.__position is None:
-            if cross.cross_above(self.__smafast, self.__smaslow) > 0:
-                self.info("Entry signal. Buy at %s" % (self.__ask))
-                self.__position = self.enterLongLimit(self.__instrument, self.__ask, self.__posSize, True)
-                #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))
-        # Check if we have to close the position.
-        elif not self.__position.exitActive() and cross.cross_below(self.__smafast, self.__smaslow) > 0:
-            self.info("Exit signal. Sell at %s" % (self.__bid))
-            self.__position.exitLimit(self.__bid)
-            #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))'''
 
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
             if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
-                #self.__buyPrice = bar.getClose()
                 shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), 4)
                 self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__ask))
-                # Enter a buy market order. The order is good till canceled.
-                #self.__position = self.enterLong(self.__instrument, shares, True)
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
             if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
-                #self.__sellPrice = bar.getClose()
                 self.info("Exit signal. Sell at %s CNY" % (self.__bid))
-                #self.__position.exitMarket()
-
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
                 self.__position.setShares(self.getBroker().getShares(self.__instrument))
