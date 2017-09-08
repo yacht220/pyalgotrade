@@ -6,6 +6,7 @@ from pyalgotrade.technical import cross
 from pyalgotrade.technical import macd
 from mystrategy.common import mysignal
 from mystrategy import common
+from mystrategy.common import myemail
 import pdb
 import math
 
@@ -82,6 +83,8 @@ class MyLiveStrategy(strategy.BaseStrategy):
         if self.getFeed().getInit() is True:
             self.info("Bar feed is in init")
             return
+
+        myemail.sendEmail('yizhou.zhou@noreply.com', 'yizhou.zhou@outlook.com')
 
         self.getBroker().refreshAccountBalance()
         self.info("Current portfolio value %.2f CNY" % self.getResult())
