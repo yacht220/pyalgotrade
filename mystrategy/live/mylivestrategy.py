@@ -12,7 +12,7 @@ import math
 class MyLiveStrategy(strategy.BaseStrategy):
     def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
                  emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
-        super(Strategy, self).__init__(feed, brk)
+        super(MyLiveStrategy, self).__init__(feed, brk)
         self.__instrument = common.ltc_symbol
         self.__prices = feed[self.__instrument].getCloseDataSeries()
         if smaPeriodFast is not None:
