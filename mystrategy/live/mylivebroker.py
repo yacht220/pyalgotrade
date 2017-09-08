@@ -199,7 +199,7 @@ class MyLiveBroker(broker.Broker):
 
         return True        
 
-    def _refreshAccountBalance(self):
+    def refreshAccountBalance(self):
         #self.__stop  = True
         timestamp, jsonData = self.__huobitrade.getAccountInfo()
         if jsonData.has_key('code'):
@@ -230,7 +230,7 @@ class MyLiveBroker(broker.Broker):
     def start(self):
         mylivebrklogger.info("Start broker")
         super(MyLiveBroker, self).start()
-        self._refreshAccountBalance()
+        self.refreshAccountBalance()
     
     def stop(self):
         mylivebrklogger.info("Stop broker")
@@ -250,8 +250,8 @@ class MyLiveBroker(broker.Broker):
                 self.notifyOrderEvent(broker.OrderEvent(order, broker.OrderEvent.Type.ACCEPTED, None))
 
         self._orderStatusUpdate(ordersToProcess)
-        self._refreshAccountBalance()
-        mylivebrklogger.info("Current equity %.2f" % self.getEquity())
+        #self._refreshAccountBalance()
+        #mylivebrklogger.info("Current equity %.2f" % self.getEquity())
 
     def peekDateTime(self):
         return None
@@ -302,7 +302,7 @@ class MyLiveBroker(broker.Broker):
         order.switchState(broker.Order.State.CANCELED)
 
         # Update cash and shares.
-        self._refreshAccountBalance()
+        self.refreshAccountBalance()
 
         # Notify that the order was canceled.
         self.notifyOrderEvent(broker.OrderEvent(order, broker.OrderEvent.Type.CANCELED, "User requested cancellation"))

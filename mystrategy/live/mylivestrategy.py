@@ -9,7 +9,7 @@ from mystrategy import common
 import pdb
 import math
 
-class Strategy(strategy.BaseStrategy):
+class MyLiveStrategy(strategy.BaseStrategy):
     def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
                  emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
         super(Strategy, self).__init__(feed, brk)
@@ -59,7 +59,6 @@ class Strategy(strategy.BaseStrategy):
 
     def onEnterOk(self, position):
         filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
-        #self.info("Current portfolio value $%.2f" % (self.getBroker().getEquity()))
         self.info("Position opened at %s" % filledPrice) 
 
     def onEnterCanceled(self, position):
@@ -74,18 +73,18 @@ class Strategy(strategy.BaseStrategy):
     def onExitCanceled(self, position):
         self.info("Position exit canceled")
         # If the exit was canceled, re-submit it.
-        self.__position.exitMarket()
+        self.__position.exitLimit(self.__bid)
 
     def onBars(self, bars):
         #pdb.set_trace()
-        self.info("Current portfolio value %.2f CNY" % self.getResult())
-
         bar = bars[self.__instrument]
         self.info("Time: %s. Price: %s. Volume: %s." % (bar.getDateTime(), bar.getClose(), bar.getVolume()))
         if self.getFeed().getInit() is True:
             self.info("Bar feed is in init")
             return
 
+        self.getBroker().refreshAccountBalance()
+        self.info("Current portfolio value %.2f CNY" % self.getResult())
         self._getOrderBookUpdate()
 
         # If a position was not opened, check if we should enter a long position.
@@ -97,17 +96,17 @@ class Strategy(strategy.BaseStrategy):
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
             if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
-                self.info("Exit signal. Sell at %s CNY" % (self.__bid))
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
                 self.__position.setShares(self.getBroker().getShares(self.__instrument))
+                self.info("Exit signal. Sell %s shares at %s CNY" % (self.position.getShares(), self.__bid))
                 self.__position.exitLimit(self.__bid)
 
 def main():
     barFeed = mylivefeed.LiveTradeFeed()
     brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()
-    strat = Strategy(barFeed, brk, signal, 12, 26)
+    strat = MyLiveStrategy(barFeed, brk, signal, 12, 26)
     
     strat.run()
 

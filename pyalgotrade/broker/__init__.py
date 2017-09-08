@@ -22,8 +22,10 @@ import abc
 
 from pyalgotrade import observer
 from pyalgotrade import dispatchprio
+from mystrategy.common import mylogger
 import pdb
 
+myorderlogger = mylogger.getMyLogger("myorderlogger")
 
 # This class is used to prevent bugs like the one triggered in testcases.bitstamp_test:TestCase.testRoundingBug.
 # Why not use decimal.Decimal instead ?
@@ -272,6 +274,7 @@ class Order(object):
 
     def getRemaining(self):
         """Returns the number of shares still outstanding."""
+        myorderlogger.info("Quantity %s and filled %s" % (self.__quantity, self.__filled))
         return self.__instrumentTraits.roundQuantity(self.__quantity - self.__filled)
 
     def getAvgFillPrice(self):
