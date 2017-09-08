@@ -25,7 +25,7 @@ from pyalgotrade import dispatchprio
 from mystrategy.common import mylogger
 import pdb
 
-myorderlogger = mylogger.getMyLogger("myorderlogger")
+myorderlogger = mylogger.getMyLogger("myorder")
 
 # This class is used to prevent bugs like the one triggered in testcases.bitstamp_test:TestCase.testRoundingBug.
 # Why not use decimal.Decimal instead ?
