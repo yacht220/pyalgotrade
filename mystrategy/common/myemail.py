@@ -6,10 +6,12 @@ from email.mime.text import MIMEText
 
 canSend = True
 
-def sendEmail(from_, to_):
+def sendEmail(text):
     if canSend is True:
-        msg = MIMEText("Everything is OK")
-        msg['Subject'] = 'PyalgoTrade heartbeat'
+        from_ = 'yizhou.zhou@noreply.com'
+        to_ = 'yizhou.zhou@outlook.com'
+        msg = MIMEText(text)
+        msg['Subject'] = 'PyalgoTrade notification'
         msg['From'] = from_
         msg['To'] = to_
 

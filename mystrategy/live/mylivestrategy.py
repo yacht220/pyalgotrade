@@ -61,20 +61,24 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def onEnterOk(self, position):
         filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
         self.info("Position opened at %s" % filledPrice) 
+        myemail.sendEmail("Position opened")
 
     def onEnterCanceled(self, position):
         self.info("Position entry canceled")
         self.__position = None
+        myemail.sendEmail("Position entry canceled")
 
     def onExitOk(self, position):
         self.__position = None
         filledPrice = position.getExitOrder().getExecutionInfo().getPrice()
         self.info("Position closed at %s" % filledPrice)
+        myemail.sendEmail("Position closed")
 
     def onExitCanceled(self, position):
         self.info("Position exit canceled")
         # If the exit was canceled, re-submit it.
         self.__position.exitLimit(self.__bid)
+        myemail.sendEmail("Position exit canceled")
 
     def onBars(self, bars):
         #pdb.set_trace()
@@ -84,7 +88,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
             self.info("Bar feed is in init")
             return
 
-        myemail.sendEmail('yizhou.zhou@noreply.com', 'yizhou.zhou@outlook.com')
+        myemail.sendEmail("Everything is OK")
 
         self.getBroker().refreshAccountBalance()
         self.info("Current portfolio value %.2f CNY" % self.getResult())
@@ -96,6 +100,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), 4)
                 self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__ask))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
+                myemail.sendEmail("Entry signal")
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
             if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
@@ -104,6 +109,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 self.__position.setShares(self.getBroker().getShares(self.__instrument))
                 self.info("Exit signal. Sell %s shares at %s CNY" % (self.position.getShares(), self.__bid))
                 self.__position.exitLimit(self.__bid)
+                myemail.sendEmail("Exit signal")
 
 def main():
     barFeed = mylivefeed.LiveTradeFeed()
