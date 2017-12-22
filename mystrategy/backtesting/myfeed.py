@@ -55,12 +55,12 @@ class Feed(membf.BarFeed):
     def addBarsFromJson(self, instrument, jsondata):
         loadedBars = []
         for it in jsondata:
-            dateTime = self.__parseDate(it[0])
-            open_ = float(it[1])
-            high = float(it[2])
-            low = float(it[3])
-            close = float(it[4])
-            volume = float(it[5])
+            dateTime = datetime.datetime.fromtimestamp(it['id'])
+            open_ = float(it['open'])
+            high = float(it['high'])
+            low = float(it['low'])
+            close = float(it['close'])
+            volume = float(it['amount'])
             adjClose = None
             bar_ = self.__barClass(dateTime, open_, high, low, close, volume, adjClose, self.__frequency)
             loadedBars.append(bar_)

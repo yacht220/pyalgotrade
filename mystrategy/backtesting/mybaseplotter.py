@@ -13,7 +13,7 @@ from mystrategy.huobi import huobiapi
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.BtcLtcDataApi()
-kline = huobi.getKline(huobiapi.SYMBOL_LTCCNY, '060', 2000)
+kline = huobi.getKline(huobiapi.SYMBOL_BTCUSDT, '60min', 2000)['data']
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson(common.ltc_symbol, kline)
@@ -47,7 +47,7 @@ plt.getOrCreateSubplot("returns").addDataSeries("Simple returns", returnsAnalyze
 
 # Run the strategy.
 myStrategy.run()
-myStrategy.info("Final portfolio value: %.2f CNY" % myStrategy.getResult())
+myStrategy.info("Final portfolio value: %.2f USDT" % myStrategy.getResult())
 
 # Plot the strategy.
 plt.plot()

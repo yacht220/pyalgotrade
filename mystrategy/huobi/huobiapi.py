@@ -1,3 +1,4 @@
+from huobiutil import *
 import json
 import requests
 import time
@@ -9,6 +10,8 @@ import hashlib
 SYMBOL_BTCCNY = 'BTC_CNY'
 SYMBOL_LTCCNY = 'LTC_CNY'
 SYMBOL_BTCUSD = 'BTC_USD'
+
+SYMBOL_BTCUSDT = 'btcusdt'
 
 class BtcLtcDataApi(object):
     KLINE_SYMBOL_URL = {
@@ -26,7 +29,7 @@ class BtcLtcDataApi(object):
     def __init__(self):
         pass
 
-    def getKline(self, symbol, period, length=0):
+    '''def getKline(self, symbol, period, length=0):
         url = self.KLINE_SYMBOL_URL[symbol]
         url = url.replace('[period]', period)
         
@@ -40,7 +43,15 @@ class BtcLtcDataApi(object):
                 return data
         except Exception, e:
             print e
-            return None
+            return None'''
+
+    def getKline(self, symbol, period, size=None):
+        params = {'symbol': symbol,
+                  'period': period}
+        if size is not None:
+            params['size'] = size
+        url = MARKET_URL + '/market/history/kline'
+        return http_get_request(url, params)
 
     def getDepth(self, symbol, level):
         url = self.DEPTH_SYMBOL_URL[symbol]
@@ -312,3 +323,17 @@ class BtcLtcTradeApiFake(object):
     def cancelOrder(self, id_, coinType=COINTYPE_BTC):
         ret = {'result':'success'}
         return datetime.fromtimestamp(time.time()), ret
+
+# Testing purpose only
+if __name__ == "__main__":
+    huobiDataApi = BtcLtcDataApi()
+    r = huobiDataApi.getKline("btcusdt", "60min")
+    print r
+    t = r['data'][0]['id']
+    year = datetime.fromtimestamp(t).year
+    month = datetime.fromtimestamp(t).month
+    day = datetime.fromtimestamp(t).day
+    hour = datetime.fromtimestamp(t).hour
+    minute = datetime.fromtimestamp(t).minute
+    print year, month, day, hour, minute
+    print type(datetime.fromtimestamp(t))
