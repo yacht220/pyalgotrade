@@ -4,7 +4,7 @@ import smtplib
 # Import the email modules we'll need
 from email.mime.text import MIMEText
 
-canSend = True
+canSend = False
 
 def sendEmail(text):
     if canSend is True:

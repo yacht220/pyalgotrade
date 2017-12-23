@@ -6,15 +6,20 @@ from datetime import datetime
 import pdb
 import urllib
 import hashlib
+from mystrategy.common import mylogger
+from mystrategy import common
 
-SYMBOL_BTCCNY = 'BTC_CNY'
+myhuobiapilogger = mylogger.getMyLogger("myhuobiapi")
+
+'''SYMBOL_BTCCNY = 'BTC_CNY'
 SYMBOL_LTCCNY = 'LTC_CNY'
 SYMBOL_BTCUSD = 'BTC_USD'
+'''
 
 SYMBOL_BTCUSDT = 'btcusdt'
 
-class BtcLtcDataApi(object):
-    KLINE_SYMBOL_URL = {
+class HuobiDataApi(object):
+    '''KLINE_SYMBOL_URL = {
         SYMBOL_BTCCNY: 'http://api.huobi.com/staticmarket/btc_kline_[period]_json.js',
         SYMBOL_LTCCNY: 'http://api.huobi.com/staticmarket/ltc_kline_[period]_json.js',
         SYMBOL_BTCUSD: 'http://api.huobi.com/usdmarket/btc_kline_[period]_json.js'
@@ -24,7 +29,7 @@ class BtcLtcDataApi(object):
         SYMBOL_BTCCNY: 'http://api.huobi.com/staticmarket/depth_btc_json.js',
         SYMBOL_LTCCNY: 'http://api.huobi.com/staticmarket/depth_ltc_json.js',
         SYMBOL_BTCUSD: 'http://api.huobi.com/usdmarket/depth_btc_json.js'
-    } 
+    } '''
 
     def __init__(self):
         pass
@@ -53,7 +58,7 @@ class BtcLtcDataApi(object):
         url = MARKET_URL + '/market/history/kline'
         return http_get_request(url, params)
 
-    def getDepth(self, symbol, level):
+    """def getDepth(self, symbol, level):
         url = self.DEPTH_SYMBOL_URL[symbol]
         url = url.replace('json', level)
 
@@ -64,10 +69,16 @@ class BtcLtcDataApi(object):
                 return data
         except Exception, e:
             print e
-            return None
+            return None"""
 
+    def getDepth(self, symbol, type):
+        params = {'symbol': symbol,
+                  'type': type}
 
-HUOBI_TRADE_API = 'https://api.huobi.com/apiv3'
+        url = MARKET_URL + '/market/depth'
+        return http_get_request(url, params)
+
+'''HUOBI_TRADE_API = 'https://api.huobi.com/apiv3'
 
 COINTYPE_BTC = 1
 COINTYPE_LTC = 2
@@ -82,13 +93,14 @@ FUNCTIONCODE_BUYMARKET = 'buy_market'
 FUNCTIONCODE_SELLMARKET = 'sell_market'
 FUNCTIONCODE_CANCELORDER = 'cancel_order'
 FUNCTIONCODE_GETNEWDEALORDERS = 'get_new_deal_orders'
+'''
 
-class BtcLtcTradeApi(object):
+class HuobiTradeApi(object):
     def __init__(self):
         self.accessKey = ''
         self.secretKey = ''
 
-    def _signature(self, params):
+    '''def _signature(self, params):
         params = sorted(params.iteritems(), key=lambda d:d[0], reverse=False)
         message = urllib.urlencode(params)
     
@@ -124,31 +136,58 @@ class BtcLtcTradeApi(object):
             data = r.json()
             return datetime_, data
         else:
-            return datetime_, None        
+            return datetime_, None'''       
     
-    def getAccountInfo(self, market='cny'):
+    '''def getAccountInfo(self, market='cny'):
         method = FUNCTIONCODE_GETACCOUNTINFO
         params = {}
         
         optional = {'market': market}
-        return self._processRequest(method, params, optional)
+        return self._processRequest(method, params, optional)'''
 
-    def getOrders(self, coinType=COINTYPE_BTC, market='cny'):
+    def _getAccounts(self):
+        path = "/v1/account/accounts"
+        params = {}
+        return api_key_get(params, path)
+
+    def getBalance(self, acct_id=None):
+        if not acct_id:
+            try:
+                accounts = self._getAccounts()
+                acct_id = ACCOUNT_ID = accounts['data'][0]['id']
+            except BaseException as e:
+                myhuobiapilogger.error('get acct_id error.%s' % e)
+                acct_id = ACCOUNT_ID
+
+        url = "/v1/account/accounts/{0}/balance".format(acct_id)
+        params = {"account-id": acct_id}
+        return api_key_get(params, url)
+
+    '''def getOrders(self, coinType=COINTYPE_BTC, market='cny'):
         method = FUNCTIONCODE_GETORDERS
         params = {'coin_type': coinType}
         optional = {'market': market}
-        return self._processRequest(method, params, optional)
+        return self._processRequest(method, params, optional)'''
 
-    def getOrderInfo(self, id_, coinType=COINTYPE_BTC, market='cny'):
+
+    '''def getOrderInfo(self, id_, coinType=COINTYPE_BTC, market='cny'):
         method = FUNCTIONCODE_ORDERINFO
         params = {
             'coin_type': coinType,
             'id': id_
         }
         optional = {'market': market}
-        return self._processRequest(method, params, optional)
+        return self._processRequest(method, params, optional)'''
 
-    def buyLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+    def getOrderInfo(self, order_id):   
+        params = {}
+        url = "/v1/order/orders/{0}/matchresults".format(order_id)
+        return api_key_get(params, url)
+
+    def getOrderInfoFake(self, order_id):
+        return {"id":order_id, "price":"1", "filled-amount":str(common.fakeShares), "filled-fees":"1"}
+
+    '''def buyLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
         method = FUNCTIONCODE_BUY
         params = {
             'coin_type': coinType,
@@ -160,9 +199,32 @@ class BtcLtcTradeApi(object):
             'trade_id': tradeId,
             'market': market
         }
-        return self._processRequest(method, params, optional)
+        return self._processRequest(method, params, optional)'''
 
-    def sellLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+    def buyLimit(self, price, amount, symbol, source = 'api', _type = 'buy-limit'):
+        try:
+            accounts = self._getAccounts()
+            acct_id = accounts['data'][0]['id']
+        except BaseException as e:
+            myhuobiapilogger.error('get acct_id error.%s' % e)
+            acct_id = ACCOUNT_ID
+
+        params = {"account-id": acct_id,
+                  "amount": amount,
+                  "symbol": symbol,
+                  "type": _type,
+                  "source": source}
+        if price:
+            params["price"] = price
+
+        url = '/v1/order/orders/place'
+        return api_key_post(params, url)
+
+    def buyLimitFake(self, price, amount, symbol, source = 'api', _type = 'buy-limit'):
+        return {"status":"ok", "data":"1"}
+
+
+    '''def sellLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
         method = FUNCTIONCODE_SELL
         params = {
             'coin_type': coinType,
@@ -174,9 +236,28 @@ class BtcLtcTradeApi(object):
             'trade_id': tradeId,
             'market': market
         }
-        return self._processRequest(method, params, optional)
+        return self._processRequest(method, params, optional)'''
 
-    def buyMarket(self, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
+    def sellLimit(self, price, amount, symbol, source = 'api', _type = 'sell-limit'):
+        try:
+            accounts = self._getAccounts()
+            acct_id = accounts['data'][0]['id']
+        except BaseException as e:
+            myhuobiapilogger.error('get acct_id error.%s' % e)
+            acct_id = ACCOUNT_ID
+
+        params = {"account-id": acct_id,
+                  "amount": amount,
+                  "symbol": symbol,
+                  "type": _type,
+                  "source": source}
+        if price:
+            params["price"] = price
+
+        url = '/v1/order/orders/place'
+        return api_key_post(params, url)
+
+    '''def buyMarket(self, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
         method = FUNCTIONCODE_BUYMARKET
         params = {
             'coin_type': coinType,
@@ -200,26 +281,31 @@ class BtcLtcTradeApi(object):
             'trade_id': tradeId,
             'market': market
         }
-        return self._processRequest(method, params, optional)      
+        return self._processRequest(method, params, optional)'''     
 
-    def cancelOrder(self, id_, coinType=COINTYPE_BTC, market='cny'):
+    '''def cancelOrder(self, id_, coinType=COINTYPE_BTC, market='cny'):
         method = FUNCTIONCODE_CANCELORDER
         params = {
             'coin_type': coinType,
             'id': id_
         }
         optional = {'market': market}
-        return self._processRequest(method, params, optional)    
+        return self._processRequest(method, params, optional) ''' 
 
-    def getNewDealOrders(self, coinType=COINTYPE_BTC, market='cny'):
+    def cancelOrder(self, order_id):
+        params = {}
+        url = "/v1/order/orders/{0}/submitcancel".format(order_id)
+        return api_key_post(params, url)  
+
+    '''def getNewDealOrders(self, coinType=COINTYPE_BTC, market='cny'):
         method = FUNCTIONCODE_GETNEWDEALORDERS
         params = {
             'coin_type': coinType
         }
         optional = {'market': market}
-        return self._processRequest(method, params, optional)
+        return self._processRequest(method, params, optional)'''
 
-class BtcLtcTradeApiFake(object):
+'''class HuobiTradeApiFake(object):
     def __init__(self):
         self.__orderIdTmp = None
         self.__orderTypeTmp = None
@@ -230,7 +316,7 @@ class BtcLtcTradeApiFake(object):
         self.__cashTmp = 10000
         self.__isInPositionTmp = False
         self.__dateTime = None
-        self.__data = BtcLtcDataApi()
+        self.__data = HuobiDataApi()
 
     def getAccountInfo(self):
         #pdb.set_trace()
@@ -322,12 +408,12 @@ class BtcLtcTradeApiFake(object):
 
     def cancelOrder(self, id_, coinType=COINTYPE_BTC):
         ret = {'result':'success'}
-        return datetime.fromtimestamp(time.time()), ret
+        return datetime.fromtimestamp(time.time()), ret'''
 
 # Testing purpose only
 if __name__ == "__main__":
-    huobiDataApi = BtcLtcDataApi()
-    r = huobiDataApi.getKline("btcusdt", "60min")
+    huobiDataApi = HuobiDataApi()
+    '''r = huobiDataApi.getKline("btcusdt", "60min")
     print r
     t = r['data'][0]['id']
     year = datetime.fromtimestamp(t).year
@@ -336,4 +422,16 @@ if __name__ == "__main__":
     hour = datetime.fromtimestamp(t).hour
     minute = datetime.fromtimestamp(t).minute
     print year, month, day, hour, minute
-    print type(datetime.fromtimestamp(t))
+    print type(datetime.fromtimestamp(t))'''
+    
+    '''print huobiDataApi.getDepth("btcusdt", "step1")['tick']['asks'][0][0]
+    print('\n')
+    print huobiDataApi.getDepth("btcusdt", "step5")['tick']['asks'][0]'''
+
+    huobiTradeApi = HuobiTradeApi()
+    r = huobiTradeApi.getBalance()['data']['list']  
+    for i in r:
+        if i['currency'] == 'btc' and i['type'] == 'trade':
+            print float(i['balance'])
+        elif  i['currency'] == 'usdt' and i['type'] == 'trade':
+            print float(i['balance'])

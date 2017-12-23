@@ -341,7 +341,8 @@ class Order(object):
     def addExecutionInfoLive(self, orderExecutionInfo):
         self.__executionInfo = orderExecutionInfo
         self.__filled = self.getInstrumentTraits().roundQuantity(orderExecutionInfo.getQuantity())
-        self.__commissions += orderExecutionInfo.getCommission()
+        #self.__commissions += orderExecutionInfo.getCommission()
+        self.__commissions = orderExecutionInfo.getCommission()
 
         if self.getRemaining() == 0:
             self.switchState(Order.State.FILLED)

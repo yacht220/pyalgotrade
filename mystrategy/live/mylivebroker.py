@@ -2,6 +2,8 @@ from pyalgotrade import broker
 from mystrategy.huobi import huobiapi
 from mystrategy.common import mylogger
 from mystrategy import common
+import datetime
+import time
 
 mylivebrklogger = mylogger.getMyLogger("mylivebroker")
 
@@ -12,15 +14,15 @@ class MyInstrumentTraits(broker.InstrumentTraits):
 class MyOrder(object):
     def __init__(self):
         self.__id = None
-        self.__type = None
-        self.__requestPrice = None
-        self.__requestQuantity = None
+        #self.__type = None
+        #self.__requestPrice = None
+        #self.__requestQuantity = None
         self.__filledPrice = None
         self.__filledQuantity = None
-        self.__vot = None
+        #self.__vot = None
         self.__fee = None
-        self.__total = None 
-        self.__status = None
+        #self.__total = None 
+        #self.__status = None
         self.__dateTime = None
 
     def setId(self, id_):
@@ -29,7 +31,7 @@ class MyOrder(object):
     def getId(self):
         return self.__id
 
-    def setType(self, type_):
+    '''def setType(self, type_):
         self.__type = type_
 
     def getType(self):
@@ -45,7 +47,7 @@ class MyOrder(object):
         self.__requestQuantity = requestQuantity
 
     def getRequestQuantity(self):
-        return self.__requestQuantity
+        return self.__requestQuantity'''
 
     def setFilledPrice(self, filledPrice):
         self.__filledPrice = filledPrice
@@ -59,11 +61,11 @@ class MyOrder(object):
     def getFilledQuantity(self):
         return self.__filledQuantity
 
-    def setVot(self, vot):
+    '''def setVot(self, vot):
         self.__vot = vot
 
     def getVot(self):
-        return self.__vot
+        return self.__vot'''
 
     def setFee(self, fee):
         self.__fee = fee
@@ -71,7 +73,7 @@ class MyOrder(object):
     def getFee(self):
         return self.__fee
 
-    def setTotal(self, total):
+    '''def setTotal(self, total):
         self.__total = total
 
     def getTotal(self):
@@ -81,7 +83,7 @@ class MyOrder(object):
         self.__status = status
 
     def getStatus(self):
-        return self.__status
+        return self.__status'''
 
     def setDateTime(self, time):
         self.__dateTime = time
@@ -92,7 +94,7 @@ class MyOrder(object):
 class MyLiveBroker(broker.Broker):
     def __init__(self):
         super(MyLiveBroker, self).__init__()
-        self.__huobitrade = huobiapi.BtcLtcTradeApi()
+        self.__huobitrade = huobiapi.HuobiTradeApi()
         self.__stop = False
         self.__activeOrders = {}
         self.__total = 0
@@ -130,22 +132,26 @@ class MyLiveBroker(broker.Broker):
             self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
 
     def _getOrderInfo(self, id_):
-        timestamp, jsonData = self.__huobitrade.getOrderInfo(id_, huobiapi.COINTYPE_LTC)
+        if common.fake is False:
+            jsonData = self.__huobitrade.getOrderInfo(id_)['data']
+        else:
+            jsonData = self.__huobitrade.getOrderInfoFake(id_)
+        timestamp = datetime.datetime.fromtimestamp(time.time())
         order = MyOrder()
         order.setId(long(jsonData['id']))
-        order.setType(int(jsonData['type']))
-        order.setRequestPrice(float(jsonData['order_price']))
-        order.setRequestQuantity(float(jsonData['order_amount']))
-        order.setFilledPrice(float(jsonData['processed_price']))
-        order.setFilledQuantity(float(jsonData['processed_amount']))
-        order.setVot(float(jsonData['vot']))
-        order.setFee(float(jsonData['fee']))
-        order.setTotal(float(jsonData['total']))
-        order.setStatus(int(jsonData['status']))
+        #order.setType(int(jsonData['type']))
+        #order.setRequestPrice(float(jsonData['price']))
+        #order.setRequestQuantity(float(jsonData['amount']))
+        order.setFilledPrice(float(jsonData['price']))
+        order.setFilledQuantity(float(jsonData['filled-amount']))
+        #order.setVot(float(jsonData['vot']))
+        order.setFee(float(jsonData['filled-fees']))
+        #order.setTotal(float(jsonData['total']))
+        #order.setStatus(int(jsonData['status']))
         order.setDateTime(timestamp)
         return order
 
-    def _buyMarket(self, quantity):
+    '''def _buyMarket(self, quantity):
         timestamp, jsonData = self.__huobitrade.buyMarket(quantity, huobiapi.COINTYPE_LTC)
         if jsonData.has_key('code'):
             raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
@@ -165,49 +171,66 @@ class MyLiveBroker(broker.Broker):
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
-        return huobiOrder
+        return huobiOrder'''
 
     def _buyLimit(self, price, quantity):
-        #self.__huobitrade = huobiapi.BtcLtcTradeApiFake()
-        timestamp, jsonData = self.__huobitrade.buyLimit(price, quantity, huobiapi.COINTYPE_LTC)
-        if jsonData.has_key('code'):
-            raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
+        #self.__huobitrade = huobiapi.HuobiTradeApiFake()
+        if common.fake is False:
+            jsonData = self.__huobitrade.buyLimit(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
+        else:
+            jsonData = self.__huobitrade.buyLimitFake(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
+        timestamp = datetime.datetime.fromtimestamp(time.time())
+        if jsonData['status'] != 'ok':
+            raise Exception("Buy market order submission failed! Error code %s" % jsonData['status'])
 
-        orderId = long(jsonData['id'])
+        orderId = long(jsonData['data'])
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
         return huobiOrder
 
     def _sellLimit(self, price, quantity):
-        #self.__huobitrade = huobiapi.BtcLtcTradeApi()
-        timestamp, jsonData = self.__huobitrade.sellLimit(price, quantity, huobiapi.COINTYPE_LTC)
-        if jsonData.has_key('code'):
-            raise Exception("Buy market order submission failed! Error code %s" % jsonData['code'])
+        #self.__huobitrade = huobiapi.HuobiTradeApi()
+        jsonData = self.__huobitrade.sellLimit(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
+        timestamp = datetime.datetime.fromtimestamp(time.time())
+        if jsonData['status'] != 'ok':
+            raise Exception("Buy market order submission failed! Error code %s" % jsonData['status'])
 
-        orderId = long(jsonData['id'])
+        orderId = long(jsonData['data'])
         huobiOrder = MyOrder()
         huobiOrder.setId(orderId)
         huobiOrder.setDateTime(timestamp)
         return huobiOrder
 
     def _cancelOrder(self, id_):
-        timestamp, jsonData = self.__huobitrade.cancelOrder(id_, huobiapi.COINTYPE_LTC)
-        if jsonData.has_key('code'):
-            mylivebrklogger.info("Failed to cancel order %s. Error code %s" % id, jsonData['code'])
+        jsonData = self.__huobitrade.cancelOrder(id_)
+        if jsonData['status'] != 'ok':
+            mylivebrklogger.info("Failed to submit order %s cancellation request. Error code %s" % id, jsonData['status'])
             return False
 
         return True        
 
     def refreshAccountBalance(self):
         #self.__stop  = True
-        timestamp, jsonData = self.__huobitrade.getAccountInfo()
-        if jsonData.has_key('code'):
-            raise Exception("Get account info failed! Error code %s" % jsonData['code'])
+        jsonData = self.__huobitrade.getBalance()
+        if jsonData['status'] != 'ok':
+            raise Exception("Get account info failed! Error code %s" % jsonData['status'])
 
-        self.__total = float(jsonData['total'])
-        self.__cash = float(jsonData['available_cny_display'])
-        self.__shares = {common.ltc_symbol:float(jsonData['available_ltc_display'])}
+        balList = jsonData['data']['list']
+        setCount = 0
+        for i in balList:
+            if i['currency'] == common.usdt_symbol and i['type'] == 'trade':
+                self.__cash = float(i['balance'])
+                setCount += 1
+            elif i['currency'] == common.btc_symbol and i['type'] == 'trade':
+                self.__shares = {common.btc_symbol:float(i['balance'])}
+                setCount += 1
+            if setCount == 2:
+                break
+
+        #self.__total = float(jsonData['total'])
+        #self.__cash = float(jsonData['available_cny_display'])
+        #self.__shares = {common.btc_symbol:float(jsonData['available_ltc_display'])}
         #self.__stop = False
 
     def submitOrder(self, order):

@@ -39,11 +39,11 @@ class TradeBar(bar.Bar):
     def __init__(self, dateTime, tradeJson):
         self.__dateTime = dateTime
         #self.__tradeId = trade.getId()
-        self.__open = float(tradeJson[1])
-        self.__high = float(tradeJson[2])
-        self.__low = float(tradeJson[3])
-        self.__price = float(tradeJson[4])
-        self.__amount = float(tradeJson[5])
+        self.__open = float(tradeJson['open'])
+        self.__high = float(tradeJson['high'])
+        self.__low = float(tradeJson['low'])
+        self.__price = float(tradeJson['close'])
+        self.__amount = float(tradeJson['amount'])
         #self.__buy = trade.isBuy()
 
     def __setstate__(self, state):
@@ -111,52 +111,55 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         Note that a Bar will be created for every trade, so open, high, low and close values will all be the same.
     """
 
-    KLINE_PERIOD = '060'
+    KLINE_PERIOD = '60min'
 
     def __init__(self, maxLen=None):
         super(LiveTradeFeed, self).__init__(bar.Frequency.MINUTE, maxLen)
         self.__barDicts = []
-        self.registerInstrument(common.ltc_symbol)
+        self.registerInstrument(common.btc_symbol)
         self.__prevTradeDateTime = None
         self.__stopped = False
-        self.__huobidata = huobiapi.BtcLtcDataApi()
+        self.__huobidata = huobiapi.HuobiDataApi()
 
     def __dispatchImpl(self, eventFilter):
         # Preprocess history bar feeds
         if self.__init is True:
             mylivefeedlogger.info("Process initial bar feeds, bar index %s" % self.__barInitIndex)
 
-            datetime_ = self.__getTradeDateTime(self.__barInit[self.__barInitIndex][0])        
+            #datetime_ = self.__getTradeDateTime(self.__barInit[self.__barInitIndex][0])   
+            datetime_ = datetime.datetime.fromtimestamp(self.__barInit[self.__barInitIndex]['id'])     
             barDict = {
-                common.ltc_symbol: TradeBar(datetime_, self.__barInit[self.__barInitIndex])
+                common.btc_symbol: TradeBar(datetime_, self.__barInit[self.__barInitIndex])
             }
             self.__barDicts.append(barDict)
-            self.__barInitIndex += 1
+            self.__barInitIndex -= 1
 
             # Leave last 2 feeds unpreprocessed since they will be handled in live feed later
-            if self.__barInitIndex >= self.__barInitLen - 2:
+            if self.__barInitIndex == 1:
                 self.__init = False
 
             return True
 
-        bar = self.__huobidata.getKline(huobiapi.SYMBOL_LTCCNY, LiveTradeFeed.KLINE_PERIOD, 2)
+        bar = self.__huobidata.getKline(huobiapi.SYMBOL_BTCUSDT, LiveTradeFeed.KLINE_PERIOD, 2)['data']
         assert(len(bar) == 2)
-        mylivefeedlogger.info("Latest price %s" % float(bar[1][4]))
-        curdatetime = self.__getTradeDateTime(bar[1][0])
+        mylivefeedlogger.info("Latest price %s" % float(bar[0]['close']))
+        #curdatetime = self.__getTradeDateTime(bar[1][0])
+        curdatetime = datetime.datetime.fromtimestamp(bar[0]['id'])
         if (curdatetime == self.__prevTradeDateTime):
                 time.sleep(60)
                 return False
 
-        prevdatetime = self.__getTradeDateTime(bar[0][0])        
+        #prevdatetime = self.__getTradeDateTime(bar[0][0]) 
+        prevdatetime = datetime.datetime.fromtimestamp(bar[1]['id'])      
         barDict = {
-            common.ltc_symbol: TradeBar(prevdatetime, bar[0])
+            common.btc_symbol: TradeBar(prevdatetime, bar[1])
         }
         self.__prevTradeDateTime = curdatetime
         self.__barDicts.append(barDict)
 
         mylivefeedlogger.info("LiveTradeFeed.__dispatchImpl():")
         for tb in self.__barDicts:
-            mylivefeedlogger.info("  %s, %s" % (tb[common.ltc_symbol].getDateTime(), tb[common.ltc_symbol].getClose()))
+            mylivefeedlogger.info("  %s, %s" % (tb[common.btc_symbol].getDateTime(), tb[common.btc_symbol].getClose()))
 
         #pdb.set_trace()
         return True
@@ -188,7 +191,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         return datetime.datetime.now()
 
     def getOrderBookUpdate(self):
-        jsonData = self.__huobidata.getDepth(huobiapi.SYMBOL_LTCCNY, '1')
+        jsonData = self.__huobidata.getDepth(huobiapi.SYMBOL_BTCUSDT, 'step5')['tick']
         return jsonData['bids'][0][0], jsonData['asks'][0][0]
 
     def barsHaveAdjClose(self):
@@ -206,14 +209,14 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
     # This may raise.
     def start(self):
-	mylivefeedlogger.info("Start feed")
+        mylivefeedlogger.info("Start feed")
         super(LiveTradeFeed, self).start()
         self.__init = True
 
         # Get history bar feeds for initial preprocess
-        self.__barInit = self.__huobidata.getKline(huobiapi.SYMBOL_LTCCNY, LiveTradeFeed.KLINE_PERIOD, 50)
+        self.__barInit = self.__huobidata.getKline(huobiapi.SYMBOL_BTCUSDT, LiveTradeFeed.KLINE_PERIOD, 50)['data']
         self.__barInitLen = len(self.__barInit)
-        self.__barInitIndex = 0
+        self.__barInitIndex = self.__barInitLen - 1
 
     def dispatch(self):
         # Note that we may return True even if we didn't dispatch any Bar

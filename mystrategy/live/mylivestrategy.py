@@ -14,7 +14,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
                  emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
         super(MyLiveStrategy, self).__init__(feed, brk)
-        self.__instrument = common.ltc_symbol
+        self.__instrument = common.btc_symbol
         self.__prices = feed[self.__instrument].getCloseDataSeries()
         if smaPeriodFast is not None:
             self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
@@ -91,14 +91,17 @@ class MyLiveStrategy(strategy.BaseStrategy):
         myemail.sendEmail("Everything is OK")
 
         self.getBroker().refreshAccountBalance()
-        self.info("Current portfolio value %.2f CNY" % self.getResult())
+        #self.info("Current portfolio value %.2f CNY" % self.getResult())
         self._getOrderBookUpdate()
 
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
             if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), 4)
-                self.info("Entry signal. Buy %s shares at %s CNY" % (shares, self.__ask))
+                if common.fake is True:
+                    shares = self.getBroker().getShares(self.__instrument)
+                    common.fakeShares = shares
+                self.info("Entry signal. Buy %s shares at %s USDT" % (shares, self.__ask))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
                 myemail.sendEmail("Entry signal")
         # Check if we have to exit the position.
@@ -107,7 +110,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
                 self.__position.setShares(self.getBroker().getShares(self.__instrument))
-                self.info("Exit signal. Sell %s shares at %s CNY" % (self.position.getShares(), self.__bid))
+                self.info("Exit signal. Sell %s shares at %s USDT" % (self.position.getShares(), self.__bid))
                 self.__position.exitLimit(self.__bid)
                 myemail.sendEmail("Exit signal")
 
