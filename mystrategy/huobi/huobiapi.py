@@ -179,13 +179,18 @@ class HuobiTradeApi(object):
         optional = {'market': market}
         return self._processRequest(method, params, optional)'''
 
-    def getOrderInfo(self, order_id):   
+    '''def getOrderInfo(self, order_id):   
         params = {}
         url = "/v1/order/orders/{0}/matchresults".format(order_id)
+        return api_key_get(params, url)'''
+
+    def getOrderInfo(self, order_id):
+        params = {}
+        url = "/v1/order/orders/{0}".format(order_id)
         return api_key_get(params, url)
 
     def getOrderInfoFake(self, order_id):
-        return {"id":order_id, "price":"1", "filled-amount":str(common.fakeShares), "filled-fees":"1"}
+        return {"id":order_id, "price":"1", "field-amount":str(common.fakeShares), "field-fees":"1"}
 
     '''def buyLimit(self, price, quantity, coinType=COINTYPE_BTC, tradePassword='', tradeId = '', market='cny'):
         method = FUNCTIONCODE_BUY
@@ -429,9 +434,10 @@ if __name__ == "__main__":
     print huobiDataApi.getDepth("btcusdt", "step5")['tick']['asks'][0]'''
 
     huobiTradeApi = HuobiTradeApi()
-    r = huobiTradeApi.getBalance()['data']['list']  
+    '''r = huobiTradeApi.getBalance()['data']['list']  
     for i in r:
         if i['currency'] == 'btc' and i['type'] == 'trade':
             print float(i['balance'])
         elif  i['currency'] == 'usdt' and i['type'] == 'trade':
-            print float(i['balance'])
+            print float(i['balance'])'''
+    print huobiTradeApi.getOrderInfo("448128462")

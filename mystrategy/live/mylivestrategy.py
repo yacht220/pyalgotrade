@@ -96,10 +96,10 @@ class MyLiveStrategy(strategy.BaseStrategy):
 
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
-            if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
+            if common.skipBuy is True or self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), 4)
-                if common.fake is True:
-                    shares = self.getBroker().getShares(self.__instrument)
+                if common.skipBuy is True:
+                    shares = self._truncFloat(self.getBroker().getShares(self.__instrument), 4)
                     common.fakeShares = shares
                 self.info("Entry signal. Buy %s shares at %s USDT" % (shares, self.__ask))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
@@ -109,10 +109,11 @@ class MyLiveStrategy(strategy.BaseStrategy):
             if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
-                self.__position.setShares(self.getBroker().getShares(self.__instrument))
-                self.info("Exit signal. Sell %s shares at %s USDT" % (self.position.getShares(), self.__bid))
+                self.__position.setShares(self._truncFloat(self.getBroker().getShares(self.__instrument), 4))
+                self.info("Exit signal. Sell %s shares at %s USDT" % (self.__position.getShares(), self.__bid))
                 self.__position.exitLimit(self.__bid)
                 myemail.sendEmail("Exit signal")
+                common.skipBuy = False
 
 def main():
     barFeed = mylivefeed.LiveTradeFeed()

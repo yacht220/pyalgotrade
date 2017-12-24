@@ -4,6 +4,7 @@ from mystrategy.common import mylogger
 from mystrategy import common
 import datetime
 import time
+import pdb
 
 mylivebrklogger = mylogger.getMyLogger("mylivebroker")
 
@@ -132,7 +133,7 @@ class MyLiveBroker(broker.Broker):
             self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
 
     def _getOrderInfo(self, id_):
-        if common.fake is False:
+        if common.skipBuy is False:
             jsonData = self.__huobitrade.getOrderInfo(id_)['data']
         else:
             jsonData = self.__huobitrade.getOrderInfoFake(id_)
@@ -143,9 +144,9 @@ class MyLiveBroker(broker.Broker):
         #order.setRequestPrice(float(jsonData['price']))
         #order.setRequestQuantity(float(jsonData['amount']))
         order.setFilledPrice(float(jsonData['price']))
-        order.setFilledQuantity(float(jsonData['filled-amount']))
+        order.setFilledQuantity(float(jsonData['field-amount']))
         #order.setVot(float(jsonData['vot']))
-        order.setFee(float(jsonData['filled-fees']))
+        order.setFee(float(jsonData['field-fees']))
         #order.setTotal(float(jsonData['total']))
         #order.setStatus(int(jsonData['status']))
         order.setDateTime(timestamp)
@@ -175,13 +176,13 @@ class MyLiveBroker(broker.Broker):
 
     def _buyLimit(self, price, quantity):
         #self.__huobitrade = huobiapi.HuobiTradeApiFake()
-        if common.fake is False:
+        if common.skipBuy is False:
             jsonData = self.__huobitrade.buyLimit(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
         else:
             jsonData = self.__huobitrade.buyLimitFake(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
         timestamp = datetime.datetime.fromtimestamp(time.time())
         if jsonData['status'] != 'ok':
-            raise Exception("Buy market order submission failed! Error code %s" % jsonData['status'])
+            raise Exception("Buy market order submission failed!", jsonData)
 
         orderId = long(jsonData['data'])
         huobiOrder = MyOrder()
@@ -194,7 +195,7 @@ class MyLiveBroker(broker.Broker):
         jsonData = self.__huobitrade.sellLimit(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
         timestamp = datetime.datetime.fromtimestamp(time.time())
         if jsonData['status'] != 'ok':
-            raise Exception("Buy market order submission failed! Error code %s" % jsonData['status'])
+            raise Exception("Buy market order submission failed!", jsonData)
 
         orderId = long(jsonData['data'])
         huobiOrder = MyOrder()

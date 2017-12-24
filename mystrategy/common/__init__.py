@@ -1,5 +1,6 @@
 btc_symbol = "btc"
 ltc_symbol = "ltc"
 usdt_symbol = "usdt"
-fake = True
+skipBuy = False
 fakeShares = None
+canSendEmail = False

@@ -1,13 +1,12 @@
 # Import smtplib for the actual sending function
 import smtplib
+from mystrategy import common
 
 # Import the email modules we'll need
 from email.mime.text import MIMEText
 
-canSend = False
-
 def sendEmail(text):
-    if canSend is True:
+    if common.canSendEmail is True:
         from_ = 'yizhou.zhou@noreply.com'
         to_ = 'yizhou.zhou@outlook.com'
         smtp_server = '' # Enter the ip address or hostname of smtp server
