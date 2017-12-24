@@ -17,7 +17,7 @@ import urllib2
 import urlparse
 
 # timeout in 5 seconds:
-TIMEOUT = 5
+TIMEOUT = 60
 
 API_HOST = "api.huobi.pro"
 
