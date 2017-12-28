@@ -179,10 +179,10 @@ class HuobiTradeApi(object):
         optional = {'market': market}
         return self._processRequest(method, params, optional)'''
 
-    '''def getOrderInfo(self, order_id):   
+    def getOrderInfoDetail(self, order_id):   
         params = {}
         url = "/v1/order/orders/{0}/matchresults".format(order_id)
-        return api_key_get(params, url)'''
+        return api_key_get(params, url)
 
     def getOrderInfo(self, order_id):
         params = {}
@@ -440,4 +440,5 @@ if __name__ == "__main__":
             print float(i['balance'])
         elif  i['currency'] == 'usdt' and i['type'] == 'trade':
             print float(i['balance'])'''
-    print huobiTradeApi.getOrderInfo("448128462")
+    #print huobiTradeApi.getOrderInfo("448128462")
+    print huobiTradeApi.getOrderInfoDetail("491016215")

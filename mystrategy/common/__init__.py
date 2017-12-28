@@ -3,4 +3,5 @@ ltc_symbol = "ltc"
 usdt_symbol = "usdt"
 skipBuy = False
 fakeShares = None
-canSendEmail = False
+canSendEmail = True
+isBacktesting = False

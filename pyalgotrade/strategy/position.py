@@ -21,6 +21,10 @@
 from pyalgotrade.stratanalyzer import returns
 from pyalgotrade import warninghelpers
 from pyalgotrade import broker
+from mystrategy.common import mylogger
+from mystrategy import common
+
+poslogger = mylogger.getMyLogger("position")
 
 import datetime
 
@@ -80,8 +84,11 @@ class OpenState(PositionState):
 
     def onOrderEvent(self, position, orderEvent):
         if position.getExitOrder() and position.getExitOrder().getId() == orderEvent.getOrder().getId():
+            poslogger.info("removeme OpenState - I AM IN EXIT")
             if orderEvent.getEventType() == broker.OrderEvent.Type.FILLED:
+                poslogger.info("removeme OpenState - I AM IN FILLED, share %s" % position.getShares())
                 if position.getShares() == 0:
+                    poslogger.info("removeme OpenState - SHARE IS 0")
                     position.switchState(ClosedState())
                     position.getStrategy().onExitOk(position)
             elif orderEvent.getEventType() == broker.OrderEvent.Type.CANCELED:
@@ -90,6 +97,7 @@ class OpenState(PositionState):
         elif position.getEntryOrder().getId() == orderEvent.getOrder().getId():
             # Nothing to do since the entry order may be completely filled or canceled after a partial fill.
             assert(position.getShares() != 0)
+            poslogger.info("removeme OpenState - NOT EXIT, share %s" % position.getShares())
         else:
             raise Exception("Invalid order event '%s' in OpenState" % (orderEvent.getEventType()))
 
@@ -160,6 +168,7 @@ class Position(object):
         self.__state = None
         self.__activeOrders = {}
         self.__shares = 0
+        self.__totalShares = 0
         self.__strategy = strategy
         self.__entryOrder = None
         self.__entryDateTime = None
@@ -217,7 +226,7 @@ class Position(object):
         return self.__shares
 
     def setShares(self, shares):
-        self.__shares = shares
+        self.__shares = self.__totalShares = shares
 
     def entryActive(self):
         """Returns True if the entry order is active."""
@@ -383,9 +392,20 @@ class Position(object):
             execInfo = orderEvent.getEventInfo()
             # roundQuantity is used to prevent bugs like the one triggered in testcases.bitstamp_test:TestCase.testRoundingBug
             if order.isBuy():
-                self.__shares = order.getInstrumentTraits().roundQuantity(self.__shares + execInfo.getQuantity())
+                if common.isBacktesting == True:
+                    self.__shares = order.getInstrumentTraits().roundQuantity(self.__shares + execInfo.getQuantity())
+                else:
+                    self.__shares = self.__totalShares = order.getInstrumentTraits().roundQuantity(execInfo.getQuantity())
+                poslogger.info("Buy - current position share: %s" % self.__shares)
             else:
-                self.__shares = order.getInstrumentTraits().roundQuantity(self.__shares - execInfo.getQuantity())
+                if common.isBacktesting == True:
+                    self.__shares = order.getInstrumentTraits().roundQuantity(self.__shares - execInfo.getQuantity())
+                else:
+                    assert(self.__totalShares != 0)
+                    self.__shares = order.getInstrumentTraits().roundQuantity(self.__totalShares - execInfo.getQuantity())
+                    if self.__shares == 0:
+                        self.__totalShares = 0
+                poslogger.info("Sell - current position share: %s" % self.__shares)
 
         self.__state.onOrderEvent(self, orderEvent)
 

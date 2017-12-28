@@ -116,6 +116,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 common.skipBuy = False
 
 def main():
+    common.isBacktesting = False
     barFeed = mylivefeed.LiveTradeFeed()
     brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()

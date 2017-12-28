@@ -8,6 +8,8 @@ from mystrategy.common import mysignal
 from mystrategy import common
 from mystrategy.huobi import huobiapi
 
+common.isBacktesting = True
+
 # Load the yahoo feed from the CSV file
 #feed = yahoofeed.Feed()
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")

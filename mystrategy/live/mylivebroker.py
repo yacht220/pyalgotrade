@@ -20,6 +20,7 @@ class MyOrder(object):
         #self.__requestQuantity = None
         self.__filledPrice = None
         self.__filledQuantity = None
+        #self.__filledCash = None
         #self.__vot = None
         self.__fee = None
         #self.__total = None 
@@ -62,7 +63,13 @@ class MyOrder(object):
     def getFilledQuantity(self):
         return self.__filledQuantity
 
-    '''def setVot(self, vot):
+    '''def setFilledCash(self, filledCash):
+        self.__filledCash = filledCash
+
+    def getFilledCash(self):
+        return self.__filledCash
+
+    def setVot(self, vot):
         self.__vot = vot
 
     def getVot(self):
@@ -127,8 +134,10 @@ class MyLiveBroker(broker.Broker):
                 self._unregisterOrder(order)
 
             if order.isFilled():
+                mylivebrklogger.info("Filled")
                 eventType = broker.OrderEvent.Type.FILLED
             else:
+                mylivebrklogger.info("Partially filled")
                 eventType = broker.OrderEvent.Type.PARTIALLY_FILLED
             self.notifyOrderEvent(broker.OrderEvent(order, eventType, orderExecutionInfo))
 
@@ -145,6 +154,7 @@ class MyLiveBroker(broker.Broker):
         #order.setRequestQuantity(float(jsonData['amount']))
         order.setFilledPrice(float(jsonData['price']))
         order.setFilledQuantity(float(jsonData['field-amount']))
+        #order.setFilledCash(float(jsonData['field-cash-amount']))
         #order.setVot(float(jsonData['vot']))
         order.setFee(float(jsonData['field-fees']))
         #order.setTotal(float(jsonData['total']))
@@ -206,7 +216,7 @@ class MyLiveBroker(broker.Broker):
     def _cancelOrder(self, id_):
         jsonData = self.__huobitrade.cancelOrder(id_)
         if jsonData['status'] != 'ok':
-            mylivebrklogger.info("Failed to submit order %s cancellation request. Error code %s" % id, jsonData['status'])
+            mylivebrklogger.info("Failed to submit order", id, "cancellation request", jsonData)
             return False
 
         return True        
@@ -215,7 +225,7 @@ class MyLiveBroker(broker.Broker):
         #self.__stop  = True
         jsonData = self.__huobitrade.getBalance()
         if jsonData['status'] != 'ok':
-            raise Exception("Get account info failed! Error code %s" % jsonData['status'])
+            raise Exception("Get account info failed!", jsonData)
 
         balList = jsonData['data']['list']
         setCount = 0
