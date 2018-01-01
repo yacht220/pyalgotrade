@@ -16,7 +16,8 @@ SYMBOL_LTCCNY = 'LTC_CNY'
 SYMBOL_BTCUSD = 'BTC_USD'
 '''
 
-SYMBOL_BTCUSDT = 'btcusdt'
+SYMBOL = 'btcusdt'
+PRECISION = 4
 
 class HuobiDataApi(object):
     '''KLINE_SYMBOL_URL = {

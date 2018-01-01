@@ -108,12 +108,12 @@ class MySmaCrossOverUpDownSignal(object):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
 
-        return priceOver(smaFast, smaSlow, 2) and isUp(smaFast, 3) and isUp(smaSlow, 3)
+        return priceOver(smaFast, smaSlow, 1) and isUp(smaFast, 2) and isUp(smaSlow, 2)
 
     def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
-        return priceBelow(smaFast, smaSlow)#cross.cross_below(smaFast, smaSlow) > 0# or isDown(smaFast, 5)
+        return priceBelow(smaFast, smaSlow, 1)#cross.cross_below(smaFast, smaSlow) > 0# or isDown(smaFast, 5)
 
 class MyQuickAdvanceAndDeclineSignal(object):
     def __init__(self):

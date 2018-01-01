@@ -140,7 +140,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
 
             return True
 
-        bar = self.__huobidata.getKline(huobiapi.SYMBOL_BTCUSDT, LiveTradeFeed.KLINE_PERIOD, 2)['data']
+        bar = self.__huobidata.getKline(huobiapi.SYMBOL, LiveTradeFeed.KLINE_PERIOD, 2)['data']
         assert(len(bar) == 2)
         mylivefeedlogger.info("Latest price %s" % float(bar[0]['close']))
         #curdatetime = self.__getTradeDateTime(bar[1][0])
@@ -191,7 +191,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         return datetime.datetime.now()
 
     def getOrderBookUpdate(self):
-        jsonData = self.__huobidata.getDepth(huobiapi.SYMBOL_BTCUSDT, 'step5')['tick']
+        jsonData = self.__huobidata.getDepth(huobiapi.SYMBOL, 'step5')['tick']
         return jsonData['bids'][0][0], jsonData['asks'][0][0]
 
     def barsHaveAdjClose(self):
@@ -214,7 +214,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__init = True
 
         # Get history bar feeds for initial preprocess
-        self.__barInit = self.__huobidata.getKline(huobiapi.SYMBOL_BTCUSDT, LiveTradeFeed.KLINE_PERIOD, 50)['data']
+        self.__barInit = self.__huobidata.getKline(huobiapi.SYMBOL, LiveTradeFeed.KLINE_PERIOD, 50)['data']
         self.__barInitLen = len(self.__barInit)
         self.__barInitIndex = self.__barInitLen - 1
 

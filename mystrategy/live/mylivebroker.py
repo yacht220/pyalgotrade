@@ -187,9 +187,9 @@ class MyLiveBroker(broker.Broker):
     def _buyLimit(self, price, quantity):
         #self.__huobitrade = huobiapi.HuobiTradeApiFake()
         if common.skipBuy is False:
-            jsonData = self.__huobitrade.buyLimit(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
+            jsonData = self.__huobitrade.buyLimit(str(price), str(quantity), huobiapi.SYMBOL)
         else:
-            jsonData = self.__huobitrade.buyLimitFake(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
+            jsonData = self.__huobitrade.buyLimitFake(str(price), str(quantity), huobiapi.SYMBOL)
         timestamp = datetime.datetime.fromtimestamp(time.time())
         if jsonData['status'] != 'ok':
             raise Exception("Buy market order submission failed!", jsonData)
@@ -202,7 +202,7 @@ class MyLiveBroker(broker.Broker):
 
     def _sellLimit(self, price, quantity):
         #self.__huobitrade = huobiapi.HuobiTradeApi()
-        jsonData = self.__huobitrade.sellLimit(str(price), str(quantity), huobiapi.SYMBOL_BTCUSDT)
+        jsonData = self.__huobitrade.sellLimit(str(price), str(quantity), huobiapi.SYMBOL)
         timestamp = datetime.datetime.fromtimestamp(time.time())
         if jsonData['status'] != 'ok':
             raise Exception("Buy market order submission failed!", jsonData)

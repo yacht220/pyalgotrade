@@ -7,6 +7,7 @@ from pyalgotrade.technical import macd
 from mystrategy.common import mysignal
 from mystrategy import common
 from mystrategy.common import myemail
+from mystrategy.huobi import huobiapi
 import pdb
 import math
 
@@ -97,9 +98,9 @@ class MyLiveStrategy(strategy.BaseStrategy):
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
             if common.skipBuy is True or self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
-                shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), 4)
+                shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), huobiapi.PRECISION)
                 if common.skipBuy is True:
-                    shares = self._truncFloat(self.getBroker().getShares(self.__instrument), 4)
+                    shares = self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
                     common.fakeShares = shares
                 self.info("Entry signal. Buy %s shares at %s USDT" % (shares, self.__ask))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
@@ -109,7 +110,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
             if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
-                self.__position.setShares(self._truncFloat(self.getBroker().getShares(self.__instrument), 4))
+                self.__position.setShares(self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
                 self.info("Exit signal. Sell %s shares at %s USDT" % (self.__position.getShares(), self.__bid))
                 self.__position.exitLimit(self.__bid)
                 myemail.sendEmail("Exit signal")
@@ -120,7 +121,7 @@ def main():
     barFeed = mylivefeed.LiveTradeFeed()
     brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()
-    strat = MyLiveStrategy(barFeed, brk, signal, 12, 26)
+    strat = MyLiveStrategy(barFeed, brk, signal, 12, 24)
     
     strat.run()
 
