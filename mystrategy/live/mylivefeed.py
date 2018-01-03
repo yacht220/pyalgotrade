@@ -111,7 +111,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         Note that a Bar will be created for every trade, so open, high, low and close values will all be the same.
     """
 
-    KLINE_PERIOD = '60min'
+    KLINE_PERIOD = '15min'
 
     def __init__(self, maxLen=None):
         super(LiveTradeFeed, self).__init__(bar.Frequency.MINUTE, maxLen)
@@ -214,7 +214,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         self.__init = True
 
         # Get history bar feeds for initial preprocess
-        self.__barInit = self.__huobidata.getKline(huobiapi.SYMBOL, LiveTradeFeed.KLINE_PERIOD, 50)['data']
+        self.__barInit = self.__huobidata.getKline(huobiapi.SYMBOL, LiveTradeFeed.KLINE_PERIOD, 100)['data']
         self.__barInitLen = len(self.__barInit)
         self.__barInitIndex = self.__barInitLen - 1
 

@@ -121,7 +121,7 @@ def main():
     barFeed = mylivefeed.LiveTradeFeed()
     brk = mylivebroker.MyLiveBroker()
     signal = mysignal.MySmaCrossOverUpDownSignal()
-    strat = MyLiveStrategy(barFeed, brk, signal, 12, 24)
+    strat = MyLiveStrategy(barFeed, brk, signal, 48, 96)
     
     strat.run()
 

@@ -60,15 +60,21 @@ def http_get_request(url, params, add_to_headers=None):
     if add_to_headers:
         headers.update(add_to_headers)
     postdata = urllib.urlencode(params)
-    try:
-        response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return {"status":"fail"}
-    except Exception as e:
-        print("httpGet failed, detail is:%s" %e)
-        return {"status":"fail","msg":e}
+
+    retry = 100
+    while True:
+        try:
+            response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return response.json()
+                #return {"status":"fail"}
+        except Exception as e:
+            retry -= 1
+            print("httpGet failed, detail is:%s, retry %s" % (e, retry))
+            if retry == 0:
+                return {"status":"fail","msg":e}
 
 def http_post_request(url, params, add_to_headers=None):
     headers = {
@@ -80,16 +86,20 @@ def http_post_request(url, params, add_to_headers=None):
     if add_to_headers:
         headers.update(add_to_headers)
     postdata = json.dumps(params)
-    try:
-        response = requests.post(url, postdata, headers=headers, timeout=TIMEOUT)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return response.json()
-    except Exception as e:
-        print("httpPost failed, detail is:%s" % e)
-        return {"status":"fail","msg":e}
 
+    retry = 100
+    while True:
+        try:
+            response = requests.post(url, postdata, headers=headers, timeout=TIMEOUT)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return response.json()
+        except Exception as e:
+            retry -= 1
+            print("httpPost failed, detail is:%s, retry %s" % (e, retry))
+            if retry == 0:
+                return {"status":"fail","msg":e}
 
 def api_key_get(params, request_path):
     method = 'GET'
