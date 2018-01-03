@@ -15,7 +15,7 @@ common.isBacktesting = True
 #feed.addBarsFromCSV("orcl", "./mystrategy/orcl-2000.csv")
 
 huobi = huobiapi.HuobiDataApi()
-kline = huobi.getKline(huobiapi.SYMBOL, '60min', 2000)['data']
+kline = huobi.getKline(huobiapi.SYMBOL, '15min', 2000)['data']
 #print kline
 feed = myfeed.Feed()
 feed.addBarsFromJson(common.btc_symbol, kline)
@@ -32,7 +32,7 @@ signal = mysignal.MySmaCrossOverUpDownSignal()
 #signal = mysignal.MyMacdCrossOverUpDownSignal()
 
 # Evaluate the strategy with the feed's bars.
-myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, common.btc_symbol, signal, 12, 24, 12, 26, 9)
+myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, common.btc_symbol, signal, 48, 96, 12, 26, 9)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()
