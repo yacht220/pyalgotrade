@@ -230,18 +230,18 @@ class MyLiveBroker(broker.Broker):
         balList = jsonData['data']['list']
         setCount = 0
         for i in balList:
-            if i['currency'] == common.usdt_symbol and i['type'] == 'trade':
+            if i['currency'] == huobiapi.CURRENCY_SYMBOL and i['type'] == 'trade':
                 self.__cash = float(i['balance'])
                 setCount += 1
-            elif i['currency'] == common.btc_symbol and i['type'] == 'trade':
-                self.__shares = {common.btc_symbol:float(i['balance'])}
+            elif i['currency'] == huobiapi.INSTRUMENT_SYMBOL and i['type'] == 'trade':
+                self.__shares = {huobiapi.INSTRUMENT_SYMBOL:float(i['balance'])}
                 setCount += 1
             if setCount == 2:
                 break
 
         #self.__total = float(jsonData['total'])
         #self.__cash = float(jsonData['available_cny_display'])
-        #self.__shares = {common.btc_symbol:float(jsonData['available_ltc_display'])}
+        #self.__shares = {huobiapi.INSTRUMENT_SYMBOL:float(jsonData['available_ltc_display'])}
         #self.__stop = False
 
     def submitOrder(self, order):

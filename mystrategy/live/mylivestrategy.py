@@ -15,7 +15,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
                  emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
         super(MyLiveStrategy, self).__init__(feed, brk)
-        self.__instrument = common.btc_symbol
+        self.__instrument = huobiapi.INSTRUMENT_SYMBOL
         self.__prices = feed[self.__instrument].getCloseDataSeries()
         if smaPeriodFast is not None:
             self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
@@ -61,8 +61,8 @@ class MyLiveStrategy(strategy.BaseStrategy):
 
     def onEnterOk(self, position):
         filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
-        self.info("Position opened at %s" % filledPrice) 
-        myemail.sendEmail("Position opened")
+        self.info("Position opened at %s %s" % (filledPric, huobiapi.CURRENCY_SYMBOL)) 
+        myemail.sendEmail("Position opened at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL))
 
     def onEnterCanceled(self, position):
         self.info("Position entry canceled")
@@ -72,8 +72,8 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def onExitOk(self, position):
         self.__position = None
         filledPrice = position.getExitOrder().getExecutionInfo().getPrice()
-        self.info("Position closed at %s" % filledPrice)
-        myemail.sendEmail("Position closed")
+        self.info("Position closed at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL))
+        myemail.sendEmail("Position closed at %s %s" %(filledPrice, huobiapi.CURRENCY_SYMBOL))
 
     def onExitCanceled(self, position):
         self.info("Position exit canceled")
@@ -89,7 +89,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
             self.info("Bar feed is in init")
             return
 
-        myemail.sendEmail("Everything is OK")
+        myemail.sendEmail("Everything is OK, current price %s %s" % (bar.getClose(), huobiapi.CURRENCY_SYMBOL))
 
         self.getBroker().refreshAccountBalance()
         #self.info("Current portfolio value %.2f CNY" % self.getResult())
@@ -102,7 +102,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 if common.skipBuy is True:
                     shares = self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
                     common.fakeShares = shares
-                self.info("Entry signal. Buy %s shares at %s USDT" % (shares, self.__ask))
+                self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__ask, huobiapi.CURRENCY_SYMBOL))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
                 myemail.sendEmail("Entry signal")
         # Check if we have to exit the position.
@@ -111,7 +111,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
                 self.__position.setShares(self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
-                self.info("Exit signal. Sell %s shares at %s USDT" % (self.__position.getShares(), self.__bid))
+                self.info("Exit signal. Sell %s shares at %s %s" % (self.__position.getShares(), self.__bid, huobiapi.CURRENCY_SYMBOL))
                 self.__position.exitLimit(self.__bid)
                 myemail.sendEmail("Exit signal")
                 common.skipBuy = False

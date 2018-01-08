@@ -116,7 +116,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     def __init__(self, maxLen=None):
         super(LiveTradeFeed, self).__init__(bar.Frequency.MINUTE, maxLen)
         self.__barDicts = []
-        self.registerInstrument(common.btc_symbol)
+        self.registerInstrument(huobiapi.INSTRUMENT_SYMBOL)
         self.__prevTradeDateTime = None
         self.__stopped = False
         self.__huobidata = huobiapi.HuobiDataApi()
@@ -129,7 +129,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
             #datetime_ = self.__getTradeDateTime(self.__barInit[self.__barInitIndex][0])   
             datetime_ = datetime.datetime.fromtimestamp(self.__barInit[self.__barInitIndex]['id'])     
             barDict = {
-                common.btc_symbol: TradeBar(datetime_, self.__barInit[self.__barInitIndex])
+                huobiapi.INSTRUMENT_SYMBOL: TradeBar(datetime_, self.__barInit[self.__barInitIndex])
             }
             self.__barDicts.append(barDict)
             self.__barInitIndex -= 1
@@ -152,14 +152,14 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         #prevdatetime = self.__getTradeDateTime(bar[0][0]) 
         prevdatetime = datetime.datetime.fromtimestamp(bar[1]['id'])      
         barDict = {
-            common.btc_symbol: TradeBar(prevdatetime, bar[1])
+            huobiapi.INSTRUMENT_SYMBOL: TradeBar(prevdatetime, bar[1])
         }
         self.__prevTradeDateTime = curdatetime
         self.__barDicts.append(barDict)
 
         mylivefeedlogger.info("LiveTradeFeed.__dispatchImpl():")
         for tb in self.__barDicts:
-            mylivefeedlogger.info("  %s, %s" % (tb[common.btc_symbol].getDateTime(), tb[common.btc_symbol].getClose()))
+            mylivefeedlogger.info("  %s, %s" % (tb[huobiapi.INSTRUMENT_SYMBOL].getDateTime(), tb[huobiapi.INSTRUMENT_SYMBOL].getClose()))
 
         #pdb.set_trace()
         return True
@@ -180,7 +180,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     '''def __onTrade(self, trade):
         # Build a bar for each trade.
         barDict = {
-            common.btc_symbol: TradeBar(self.__getTradeDateTime(trade), trade)
+            huobiapi.INSTRUMENT_SYMBOL: TradeBar(self.__getTradeDateTime(trade), trade)
             }
         self.__barDicts.append(barDict)'''
 

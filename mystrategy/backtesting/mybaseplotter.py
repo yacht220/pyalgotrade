@@ -18,7 +18,7 @@ huobi = huobiapi.HuobiDataApi()
 kline = huobi.getKline(huobiapi.SYMBOL, '15min', 2000)['data']
 #print kline
 feed = myfeed.Feed()
-feed.addBarsFromJson(common.btc_symbol, kline)
+feed.addBarsFromJson(huobiapi.INSTRUMENT_SYMBOL, kline)
 
 commission = backtesting.TradePercentage(0.002)
 brk = mybroker.MyBroker(10000, feed, commission)
@@ -32,7 +32,7 @@ signal = mysignal.MySmaCrossOverUpDownSignal()
 #signal = mysignal.MyMacdCrossOverUpDownSignal()
 
 # Evaluate the strategy with the feed's bars.
-myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, common.btc_symbol, signal, 48, 96, 12, 26, 9)
+myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, huobiapi.INSTRUMENT_SYMBOL, signal, 48, 96, 12, 26, 9)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()
@@ -40,16 +40,16 @@ myStrategy.attachAnalyzer(returnsAnalyzer)
 # Attach the plotter to the strategy.
 plt = plotter.StrategyPlotter(myStrategy)
 # Include the SMA in the instrument's subplot to get it displayed along with the closing prices.
-plt.getInstrumentSubplot(common.btc_symbol).addDataSeries("SMAFast", myStrategy.getSMAFast())
+plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMAFast", myStrategy.getSMAFast())
 if myStrategy.getSMASlow() is not None:
-	plt.getInstrumentSubplot(common.btc_symbol).addDataSeries("SMASlow", myStrategy.getSMASlow())
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMASlow", myStrategy.getSMASlow())
 
 # Plot the simple returns on each bar.
 plt.getOrCreateSubplot("returns").addDataSeries("Simple returns", returnsAnalyzer.getReturns())
 
 # Run the strategy.
 myStrategy.run()
-myStrategy.info("Final portfolio value: %.2f USDT" % myStrategy.getResult())
+myStrategy.info("Final portfolio value: %.2f %s" % (myStrategy.getResult(), huobiapi.CURRENCY_SYMBOL))
 
 # Plot the strategy.
 plt.plot()

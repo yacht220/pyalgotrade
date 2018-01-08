@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Date    : 2017-12-15 15:40:03
-# @Author  : KlausQiu
-# @QQ      : 375235513
-# @github  : https://github.com/KlausQIU
-
 import base64
 import hmac
 import hashlib
@@ -15,6 +8,7 @@ import datetime
 import requests
 import urllib2
 import urlparse
+import time
 
 # timeout in 5 seconds:
 TIMEOUT = 60
@@ -38,20 +32,16 @@ DEFAULT_POST_HEADERS = {
     'Accept-Language': LANG,
     'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'
 }
-# 此处填写APIKEY
 
 ACCESS_KEY = ""
 SECRET_KEY = ""
 
 
-# 首次运行可通过get_accounts()获取acct_id,然后直接赋值,减少重复获取。
 ACCOUNT_ID = None
 
 
-# API 请求地址
 MARKET_URL = TRADE_URL = "https://api.huobi.pro"
 
-#各种请求,获取数据方式
 def http_get_request(url, params, add_to_headers=None):
     headers = {
         "Content-type": "application/x-www-form-urlencoded",
@@ -61,7 +51,7 @@ def http_get_request(url, params, add_to_headers=None):
         headers.update(add_to_headers)
     postdata = urllib.urlencode(params)
 
-    retry = 100
+    retry = 0
     while True:
         try:
             response = requests.get(url, postdata, headers=headers, timeout=TIMEOUT)
@@ -71,9 +61,10 @@ def http_get_request(url, params, add_to_headers=None):
                 return response.json()
                 #return {"status":"fail"}
         except Exception as e:
-            retry -= 1
+            time.sleep(1)
+            retry += 1
             print("httpGet failed, detail is:%s, retry %s" % (e, retry))
-            if retry == 0:
+            if retry == 100:
                 return {"status":"fail","msg":e}
 
 def http_post_request(url, params, add_to_headers=None):
@@ -87,7 +78,7 @@ def http_post_request(url, params, add_to_headers=None):
         headers.update(add_to_headers)
     postdata = json.dumps(params)
 
-    retry = 100
+    retry = 0
     while True:
         try:
             response = requests.post(url, postdata, headers=headers, timeout=TIMEOUT)
@@ -96,9 +87,10 @@ def http_post_request(url, params, add_to_headers=None):
             else:
                 return response.json()
         except Exception as e:
-            retry -= 1
+            time.sleep(1)
+            retry += 1
             print("httpPost failed, detail is:%s, retry %s" % (e, retry))
-            if retry == 0:
+            if retry == 100:
                 return {"status":"fail","msg":e}
 
 def api_key_get(params, request_path):
