@@ -16,48 +16,38 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 
 		# We'll use adjusted close values instead of regular close values.
 		self.setUseAdjustedValues(False)
-		self.__prices = feed[instrument].getPriceDataSeries()
 		self.__signal = signal
+		self.__signal.prices = feed[instrument].getPriceDataSeries()
 		if smaPeriodFast is not None:
-			self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
-		else:
-			self.__smaFast = None
+			self.__signal.smaFast = ma.SMA(self.__signal.prices, smaPeriodFast)
 
 		if smaPeriodSlow is not None:
-			self.__smaSlow = ma.SMA(self.__prices, smaPeriodSlow)
-		else:
-			self.__smaSlow = None
+			self.__signal.smaSlow = ma.SMA(self.__signal.prices, smaPeriodSlow)
 
 		if emaPeriodFast is not None:
-			self.__emaFast = ma.EMA(self.__prices, emaPeriodFast)
-		else:
-			self.__emaFast = None
+			self.__signal.emaFast = ma.EMA(self.__signal.prices, emaPeriodFast)
 			
 		if emaPeriodSlow is not None:
-			self.__emaSlow = ma.EMA(self.__prices, emaPeriodSlow)
-		else:
-			self.__emaSlow = None
+			self.__signal.emaSlow = ma.EMA(self.__signal.prices, emaPeriodSlow)
 
 		if emaPeriodFast is not None and emaPeriodSlow is not None and emaPeriodSignal is not None:
-			self.__macd = macd.MACD(self.__prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
-		else:
-			self.__macd = None
+			self.__signal.macd = macd.MACD(self.__signal.prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
 
 	def _truncFloat(self, floatvalue, decnum):
 		tmp = int('1' + '0' * decnum)
 		return float(int(floatvalue * tmp)) / float(tmp)
 
 	def getSMAFast(self):
-		return self.__smaFast
+		return self.__signal.smaFast
 
 	def getSMASlow(self):
-		return self.__smaSlow
+		return self.__signal.smaSlow
 
 	def getEMAFast(self):
-		return self.__emaFast
+		return self.__signal.emaFast
 
 	def getEMASlow(self):
-		return self.__emaSlow
+		return self.__signal.emaSlow
 
 	def onEnterOk(self, position):
 		#pdb.set_trace()
@@ -77,15 +67,15 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		self.__position.exitMarket()
 
 	def onBars(self, bars):
-		bar = bars[self.__instrument]
+		self.__signal.bar = bars[self.__instrument]
 
 		# If a position was not opened, check if we should enter a long position.
 		if self.__position is None:
-			if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
+			if self.__signal.enterLongSignal():
 				shares = self._truncFloat(float(self.getBroker().getCash() * 0.99 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
 				 # Enter a buy market order. The order is good till canceled.
 				self.__position = self.enterLong(self.__instrument, shares, True)
 		# Check if we have to exit the position.
 		elif not self.__position.exitActive():
-			if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
+			if self.__signal.exitLongSignal():
 				self.__position.exitMarket()

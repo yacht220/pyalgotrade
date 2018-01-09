@@ -15,38 +15,30 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
                  emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
         super(MyLiveStrategy, self).__init__(feed, brk)
-        self.__instrument = huobiapi.INSTRUMENT_SYMBOL
-        self.__prices = feed[self.__instrument].getCloseDataSeries()
-        if smaPeriodFast is not None:
-            self.__smaFast = ma.SMA(self.__prices, smaPeriodFast)
-        else:
-            self.__smaFast = None
-
-        if smaPeriodSlow is not None:
-            self.__smaSlow = ma.SMA(self.__prices, smaPeriodSlow)
-        else:
-            self.__smaSlow = None
-
-        if emaPeriodFast is not None:
-            self.__emaFast = ma.EMA(self.__prices, emaPeriodFast)
-        else:
-            self.__emaFast = None
-
-        if emaPeriodSlow is not None:
-            self.__emaSlow = ma.EMA(self.__prices, emaPeriodSlow)
-        else:
-            self.__emaSlow = None
-
-        if emaPeriodFast is not None and emaPeriodSlow is not None and emaPeriodSignal is not None:
-            self.__macd = macd.MACD(self.__prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
-        else:
-            self.__macd = None
-
         self.__bid = None
         self.__ask = None
         self.__position = None
         self.__posSize = 0.05
         self.__signal = signal
+        self.__instrument = huobiapi.INSTRUMENT_SYMBOL
+        
+        self.__signal.prices = feed[self.__instrument].getCloseDataSeries()
+        if smaPeriodFast is not None:
+            self.__signal.smaFast = ma.SMA(self.__signal.prices, smaPeriodFast)
+
+        if smaPeriodSlow is not None:
+            self.__signal.smaSlow = ma.SMA(self.__signal.prices, smaPeriodSlow)
+
+        if emaPeriodFast is not None:
+            self.__signal.emaFast = ma.EMA(self.__signal.prices, emaPeriodFast)
+
+        if emaPeriodSlow is not None:
+            self.__signal.emaSlow = ma.EMA(self.__signal.prices, emaPeriodSlow)
+
+        if emaPeriodFast is not None and emaPeriodSlow is not None and emaPeriodSignal is not None:
+            self.__signal.macd = macd.MACD(self.__signal.prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
+        else:
+            self.__macd = None
 
     def _truncFloat(self, floatvalue, decnum):
         tmp = int('1' + '0' * decnum)
@@ -83,13 +75,13 @@ class MyLiveStrategy(strategy.BaseStrategy):
 
     def onBars(self, bars):
         #pdb.set_trace()
-        bar = bars[self.__instrument]
-        self.info("Time: %s. Price: %s. Volume: %s." % (bar.getDateTime(), bar.getClose(), bar.getVolume()))
+        self.__signal.bar = bars[self.__instrument]
+        self.info("Time: %s. Price: %s. Volume: %s." % (self.__signal.bar.getDateTime(), self.__signal.bar.getClose(), self.__signal.bar.getVolume()))
         if self.getFeed().getInit() is True:
             self.info("Bar feed is in init")
             return
 
-        myemail.sendEmail("Everything is OK, current price %s %s" % (bar.getClose(), huobiapi.CURRENCY_SYMBOL))
+        myemail.sendEmail("Everything is OK, current price %s %s" % (self.__signal.bar.getClose(), huobiapi.CURRENCY_SYMBOL))
 
         self.getBroker().refreshAccountBalance()
         #self.info("Current portfolio value %.2f CNY" % self.getResult())
@@ -97,7 +89,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
 
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
-            if common.skipBuy is True or self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
+            if common.skipBuy is True or self.__signal.enterLongSignal():
                 shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), huobiapi.PRECISION)
                 if common.skipBuy is True:
                     shares = self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
@@ -107,7 +99,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 myemail.sendEmail("Entry signal")
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
-            if self.__signal.exitLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
+            if self.__signal.exitLongSignal():
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
                 self.__position.setShares(self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
