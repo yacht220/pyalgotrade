@@ -3,76 +3,109 @@ from mystrategy.common import mylogger
 
 mysignallogger = mylogger.getMyLogger("mysingal")
 
-def isUp(sma, period = 2):
+def isUp(line, period = 2):
     assert(period >= 2)
     up = True
-    if sma[-period] is None:
+    if line[-period] is None:
         return False
-    next_ = sma[-1]
+    next_ = line[-1]
     iter_ = 2
     while iter_ <= period:
-        if sma[-iter_] >= next_:
+        if line[-iter_] >= next_:
             up = False
             break
-        next_ = sma[-iter_]
+        next_ = line[-iter_]
         iter_ += 1
 
     return up
 
-def isDown(sma, period = 2):
+def isDown(line, period = 2):
     assert(period >= 2)
     down = True
-    if sma[-period] is None:
+    if line[-period] is None:
         return False
 
-    next_ = sma[-1]
+    next_ = line[-1]
     iter_ = 2
     while iter_ <= period:
-        if sma[-iter_] <= next_:
+        if line[-iter_] <= next_:
             down = False
             break
-        next_ = sma[-iter_]
+        next_ = line[-iter_]
         iter_ += 1
 
     return down
 
-def bigGradient(sma, up):
-    ratio = (float(sma[-1]) - float(sma[-2])) / float(sma[-2])
+def bigGradient(line, up):
+    ratio = (float(line[-1]) - float(line[-2])) / float(line[-2])
     mysignallogger.info("ratio is %s" % ratio)
     if up is True:
         return ratio >= 0.002
     else:
         return ratio <= -0.002
 
-def priceOver(smaFast, smaSlow, period = 1):
+def isOver(lineA, lineB, period = 1):
     assert(period >= 1)
     over = True
-    if smaFast[-period] is None or smaSlow[-period] is None:
+    if lineA[-period] is None or lineB[-period] is None:
         return False
 
     iter_ = 1
     while iter_ <= period:
-        if smaFast[-iter_] <= smaSlow[-iter_]:
+        if lineA[-iter_] <= lineB[-iter_]:
             over = False
             break
         iter_ += 1
 
     return over
 
-def priceBelow(smaFast, smaSlow, period = 1):
+def isBelow(lineA, lineB, period = 1):
     assert(period >= 1)
     below = True
-    if smaFast[-period] is None or smaSlow[-period] is None:
+    if lineA[-period] is None or lineB[-period] is None:
         return False
 
     iter_ = 1
     while iter_ <= period:
-        if smaFast[-iter_] >= smaSlow[-iter_]:
+        if lineA[-iter_] >= lineB[-iter_]:
             below = False
             break
         iter_ += 1
 
     return below
+
+def isClose(lineA, lineB, period = 2):
+    assert(period >= 2)
+    if lineA[-period] is None or lineB[-period] is None:
+        return False
+
+    diffPrev = None
+    iter_ = 1
+    while iter_ <= period:
+        diffCur = abs(lineA[-iter_] - lineB[-iter_])
+        if diffPrev != None and diffCur >= diffPrev:
+            return False
+        diffPrev = diffCur
+        iter_ += 1
+
+    return True
+
+def isAway(lineA, lineB, period = 2):
+    assert(period >= 2)
+    if lineA[-period] is None or lineB[-period] is None:
+        return False
+
+    diffPrev = None
+    iter_ = 1
+    while iter_ <= period:
+        diffCur = abs(lineA[-iter_] - lineB[-iter_])
+        if diffPrev != None and diffCur <= diffPrev:
+            return False
+        diffPrev = diffCur
+        iter_ += 1
+
+    return True
+
 
 class MyPriceSmaCrossOverSignal(object):
 	def __init__(self):
@@ -108,12 +141,13 @@ class MySmaCrossOverUpDownSignal(object):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
 
-        return priceOver(smaFast, smaSlow, 1) and isUp(smaFast, 2) and isUp(smaSlow, 2)
+        return isOver(smaFast, smaSlow, 1) and isUp(smaFast, 2) and isUp(smaSlow, 2)
 
     def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
         if smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
             return False
-        return priceBelow(smaFast, smaSlow, 1)#cross.cross_below(smaFast, smaSlow) > 0# or isDown(smaFast, 5)
+        
+        return isBelow(smaFast, smaSlow, 1)#cross.cross_below(smaFast, smaSlow) > 0# or isDown(smaFast, 5)
 
 class MyQuickAdvanceAndDeclineSignal(object):
     def __init__(self):
@@ -183,10 +217,48 @@ class MyEmaCrossOverUpDownSignal(object):
         if emaFast is None or emaFast[-1] is None or emaSlow is None or emaSlow[-1] is None:
             return False
 
-        return emaFast[-1] > emaSlow[-1] and isUp(emaFast, 3) and isUp(emaSlow, 3)
+        return isOver(emaFast, emaSlow, 1) and isUp(emaFast, 2) and isUp(emaSlow, 2)
 
     def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
         if emaFast is None or emaFast[-1] is None or emaSlow is None or emaSlow[-1] is None:
             return False
-        return cross.cross_below(emaFast, emaSlow) > 0
+        return isBelow(emaFast, emaSlow, 1)#cross.cross_below(emaFast, emaSlow) > 0
         #return emaFast[-1] < emaSlow[-1] and smaIsDown(emaFast, 2) and smaIsDown(emaSlow, 2)
+
+class MySmaCrossOverUpDownSignalStopLossStopProfit(object):
+    def __init__(self):
+        self.__priceStop = False
+        self.__buyPrice = None
+        self.__highest = 0
+
+    def enterLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
+        if len(prices) <= 1 or smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
+            return False
+
+        if self.__priceStop is True and isBelow(smaFast, smaSlow, 1):
+            self.__priceStop = False
+        if self.__priceStop is False and isOver(smaFast, smaSlow, 1) and isUp(smaFast, 2) and isUp(smaSlow, 2):
+            self.__buyPrice = prices[-1]
+            self.__highest = 0
+            return True
+
+    def exitLongSignal(self, prices, bar, smaFast, smaSlow, emaFast, emaSlow, macd):
+        if len(prices) <= 1 or smaFast is None or smaFast[-1] is None or smaSlow is None or smaSlow[-1] is None:
+            return False
+        
+        if self.__highest < bar.getHigh():
+            self.__highest = bar.getHigh()
+        if isBelow(smaFast, smaSlow, 1):
+            return True
+        elif self.__buyPrice > prices[-1]:
+            d = (self.__highest - prices[-1]) / self.__highest 
+            if d >= 0.035:
+                self.__priceStop = True
+                return True
+        elif self.__buyPrice < prices[-1]:
+            d = (prices[-1] - self.__buyPrice) / self.__buyPrice
+            if d >= 0.025:
+                self.__priceStop = True
+                return True
+        else:
+            return False

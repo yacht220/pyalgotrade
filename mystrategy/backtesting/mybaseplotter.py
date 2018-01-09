@@ -30,6 +30,7 @@ signal = mysignal.MySmaCrossOverUpDownSignal()
 #signal = mysignal.MyQuickAdvanceAndDeclineSignal()
 #signal = mysignal.MySmaUpAndDownSignal()
 #signal = mysignal.MyMacdCrossOverUpDownSignal()
+#signal = mysignal.MySmaCrossOverUpDownSignalStopLossStopProfit()
 
 # Evaluate the strategy with the feed's bars.
 myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, huobiapi.INSTRUMENT_SYMBOL, signal, 48, 96, 12, 26, 9)

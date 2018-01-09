@@ -3,6 +3,7 @@ from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
 from pyalgotrade.technical import macd
 import mybroker
+from mystrategy.huobi import huobiapi
 import pdb
 
 class MyBaseStrategy(strategy.BacktestingStrategy):
@@ -42,11 +43,21 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		else:
 			self.__macd = None
 
+	def _truncFloat(self, floatvalue, decnum):
+		tmp = int('1' + '0' * decnum)
+		return float(int(floatvalue * tmp)) / float(tmp)
+
 	def getSMAFast(self):
 		return self.__smaFast
 
 	def getSMASlow(self):
 		return self.__smaSlow
+
+	def getEMAFast(self):
+		return self.__emaFast
+
+	def getEMASlow(self):
+		return self.__emaSlow
 
 	def onEnterOk(self, position):
 		#pdb.set_trace()
@@ -71,7 +82,7 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		# If a position was not opened, check if we should enter a long position.
 		if self.__position is None:
 			if self.__signal.enterLongSignal(self.__prices, bar, self.__smaFast, self.__smaSlow, self.__emaFast, self.__emaSlow, self.__macd):
-				shares = float(self.getBroker().getCash() * 0.99 / bars[self.__instrument].getPrice())
+				shares = self._truncFloat(float(self.getBroker().getCash() * 0.99 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
 				 # Enter a buy market order. The order is good till canceled.
 				self.__position = self.enterLong(self.__instrument, shares, True)
 		# Check if we have to exit the position.

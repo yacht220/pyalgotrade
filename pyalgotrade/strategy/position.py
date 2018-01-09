@@ -23,6 +23,7 @@ from pyalgotrade import warninghelpers
 from pyalgotrade import broker
 from mystrategy.common import mylogger
 from mystrategy import common
+import pdb
 
 poslogger = mylogger.getMyLogger("position")
 
