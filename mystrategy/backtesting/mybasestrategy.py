@@ -5,6 +5,7 @@ from pyalgotrade.technical import macd
 import mybroker
 from mystrategy.huobi import huobiapi
 import pdb
+from mystrategy.common import myutils
 
 class MyBaseStrategy(strategy.BacktestingStrategy):
 	def __init__(self, feed, broker, instrument, signal, smaPeriodFast = None, 
@@ -32,10 +33,6 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 
 		if emaPeriodFast is not None and emaPeriodSlow is not None and emaPeriodSignal is not None:
 			self.__signal.macd = macd.MACD(self.__signal.prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
-
-	def _truncFloat(self, floatvalue, decnum):
-		tmp = int('1' + '0' * decnum)
-		return float(int(floatvalue * tmp)) / float(tmp)
 
 	def getSMAFast(self):
 		return self.__signal.smaFast
@@ -72,7 +69,7 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		# If a position was not opened, check if we should enter a long position.
 		if self.__position is None:
 			if self.__signal.enterLongSignal():
-				shares = self._truncFloat(float(self.getBroker().getCash() * 0.99 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
+				shares = myutils.truncFloat(float(self.getBroker().getCash() * 0.99 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
 				 # Enter a buy market order. The order is good till canceled.
 				self.__position = self.enterLong(self.__instrument, shares, True)
 		# Check if we have to exit the position.

@@ -5,6 +5,7 @@ from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
 from pyalgotrade.technical import macd
 from mystrategy.common import mysignal
+from mystrategy.common import myutils
 from mystrategy import common
 from mystrategy.common import myemail
 from mystrategy.huobi import huobiapi
@@ -39,10 +40,6 @@ class MyLiveStrategy(strategy.BaseStrategy):
             self.__signal.macd = macd.MACD(self.__signal.prices, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
         else:
             self.__macd = None
-
-    def _truncFloat(self, floatvalue, decnum):
-        tmp = int('1' + '0' * decnum)
-        return float(int(floatvalue * tmp)) / float(tmp)
 
     def _getOrderBookUpdate(self):
         bid, ask = self.getFeed().getOrderBookUpdate()
@@ -90,9 +87,9 @@ class MyLiveStrategy(strategy.BaseStrategy):
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
             if common.skipBuy is True or self.__signal.enterLongSignal():
-                shares = self._truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), huobiapi.PRECISION)
+                shares = myutils.truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), huobiapi.PRECISION)
                 if common.skipBuy is True:
-                    shares = self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
+                    shares = myutils.truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
                     common.fakeShares = shares
                 self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__ask, huobiapi.CURRENCY_SYMBOL))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
@@ -102,7 +99,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
             if self.__signal.exitLongSignal():
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
-                self.__position.setShares(self._truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
+                self.__position.setShares(myutils.truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
                 self.info("Exit signal. Sell %s shares at %s %s" % (self.__position.getShares(), self.__bid, huobiapi.CURRENCY_SYMBOL))
                 self.__position.exitLimit(self.__bid)
                 myemail.sendEmail("Exit signal")

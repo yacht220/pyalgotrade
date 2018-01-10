@@ -22,6 +22,8 @@ from pyalgotrade.barfeed import common
 from pyalgotrade import bar
 from pyalgotrade.barfeed import membf
 import datetime
+from mystrategy.common import myutils
+from mystrategy.huobi import huobiapi
 
 class Feed(membf.BarFeed):
     """Class for json data
@@ -60,7 +62,7 @@ class Feed(membf.BarFeed):
             high = float(it['high'])
             low = float(it['low'])
             close = float(it['close'])
-            volume = float(it['amount'])
+            volume = myutils.truncFloat(float(it['amount']), huobiapi.PRECISION)
             adjClose = None
             bar_ = self.__barClass(dateTime, open_, high, low, close, volume, adjClose, self.__frequency)
             loadedBars.append(bar_)

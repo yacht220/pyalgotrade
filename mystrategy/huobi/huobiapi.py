@@ -422,7 +422,7 @@ class HuobiTradeApi(object):
 # Testing purpose only
 if __name__ == "__main__":
     huobiDataApi = HuobiDataApi()
-    '''r = huobiDataApi.getKline("btcusdt", "60min")
+    '''r = huobiDataApi.getKline("bchusdt", "60min")
     print r
     t = r['data'][0]['id']
     year = datetime.fromtimestamp(t).year
