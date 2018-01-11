@@ -23,8 +23,9 @@ import abc
 from pyalgotrade import broker
 import pyalgotrade.bar
 import slippage
+from mystrategy.common import myutils
+from mystrategy.huobi import huobiapi
 import pdb
-
 
 # Returns the trigger price for a Limit or StopLimit order, or None if the limit price was not yet penetrated.
 def get_limit_price_trigger(action, limitPrice, useAdjustedValues, bar):
@@ -246,7 +247,9 @@ class DefaultStrategy(FillStrategy):
                 volumeLeft[instrument] = bar.getVolume()
             elif self.__volumeLimit is not None:
                 # We can't round here because there is no order to request the instrument traits.
-                volumeLeft[instrument] = bar.getVolume() * self.__volumeLimit
+                # 
+                # [yizhou]: We have to round since the float precision got problem. 
+                volumeLeft[instrument] = myutils.truncFloat(bar.getVolume() * self.__volumeLimit, huobiapi.PRECISION)
             # Reset the volume used for each instrument.
             self.__volumeUsed[instrument] = 0.0
 
@@ -309,7 +312,7 @@ class DefaultStrategy(FillStrategy):
             maxVolume = order.getRemaining()
 
         if not order.getAllOrNone():
-            ret = min(maxVolume, order.getRemaining())
+            ret = order.getInstrumentTraits().roundQuantity(min(maxVolume, order.getRemaining()))
         elif order.getRemaining() <= maxVolume:
             ret = order.getRemaining()
 

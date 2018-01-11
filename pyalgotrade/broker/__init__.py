@@ -23,6 +23,8 @@ import abc
 from pyalgotrade import observer
 from pyalgotrade import dispatchprio
 from mystrategy.common import mylogger
+from mystrategy.common import myutils
+from mystrategy.huobi import huobiapi
 import pdb
 
 myorderlogger = mylogger.getMyLogger("myorder")
@@ -46,7 +48,7 @@ class IntegerTraits(InstrumentTraits):
 
 class FloatTraits(InstrumentTraits):
     def roundQuantity(self, quantity):
-        return float(quantity)
+        return myutils.truncFloat(float(quantity), huobiapi.PRECISION)
 
 
 ######################################################################

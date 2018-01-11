@@ -50,7 +50,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
 
     def onEnterOk(self, position):
         filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
-        self.info("Position opened at %s %s" % (filledPric, huobiapi.CURRENCY_SYMBOL)) 
+        self.info("Position opened at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL)) 
         myemail.sendEmail("Position opened at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL))
 
     def onEnterCanceled(self, position):
