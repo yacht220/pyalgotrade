@@ -69,7 +69,7 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		# If a position was not opened, check if we should enter a long position.
 		if self.__position is None:
 			if self.__signal.enterLongSignal():
-				shares = myutils.truncFloat(float(self.getBroker().getCash() * 0.99 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
+				shares = myutils.truncFloat(float(self.getBroker().getCash() * 0.9 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
 				 # Enter a buy market order. The order is good till canceled.
 				self.__position = self.enterLong(self.__instrument, shares, True)
 		# Check if we have to exit the position.
