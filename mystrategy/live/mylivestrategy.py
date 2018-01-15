@@ -87,12 +87,15 @@ class MyLiveStrategy(strategy.BaseStrategy):
         # If a position was not opened, check if we should enter a long position.
         if self.__position is None:
             if common.skipBuy is True or self.__signal.enterLongSignal():
-                shares = myutils.truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), huobiapi.PRECISION)
+                #shares = myutils.truncFloat(float(self.getBroker().getCash() * 1.00 / self.__ask), huobiapi.PRECISION)
+                shares = myutils.truncFloat(float(self.getBroker().getCash() * 1.00 / self.__signal.bar.getClose()), huobiapi.PRECISION)
                 if common.skipBuy is True:
                     shares = myutils.truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
                     common.fakeShares = shares
-                self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__ask, huobiapi.CURRENCY_SYMBOL))
-                self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
+                #self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__ask, huobiapi.CURRENCY_SYMBOL))
+                self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__signal.bar.getClose(), huobiapi.CURRENCY_SYMBOL))
+                #self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
+                self.__position = self.enterLongLimit(self.__instrument, self.__signal.bar.getClose(), shares, True)
                 myemail.sendEmail("Entry signal")
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
@@ -100,8 +103,10 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 # Actual position shares should be obtained from account info
                 # since commission would be subtracted from filled quantity in previous buy order.
                 self.__position.setShares(myutils.truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
-                self.info("Exit signal. Sell %s shares at %s %s" % (self.__position.getShares(), self.__bid, huobiapi.CURRENCY_SYMBOL))
-                self.__position.exitLimit(self.__bid)
+                #self.info("Exit signal. Sell %s shares at %s %s" % (self.__position.getShares(), self.__bid, huobiapi.CURRENCY_SYMBOL))
+                #self.__position.exitLimit(self.__bid)
+                self.info("Exit signal. Sell %s shares at %s %s" % (self.__position.getShares(), self.__signal.bar.getClose(), huobiapi.CURRENCY_SYMBOL))
+                self.__position.exitLimit(self.__signal.bar.getClose())
                 myemail.sendEmail("Exit signal")
                 common.skipBuy = False
 
@@ -109,7 +114,11 @@ def main():
     common.isBacktesting = False
     barFeed = mylivefeed.LiveTradeFeed()
     brk = mylivebroker.MyLiveBroker()
-    signal = mysignal.MySmaCrossOverUpDownSignal()
+    if common.skipBuy is True:
+        assert(common.buyPrice is not None)
+        signal = mysignal.MyPriceSmaDeviationSignal(common.buyPrice)
+    else:
+        signal = mysignal.MyPriceSmaDeviationSignal()
     strat = MyLiveStrategy(barFeed, brk, signal, 48, 96)
     
     strat.run()

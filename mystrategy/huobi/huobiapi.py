@@ -17,9 +17,9 @@ SYMBOL_BTCUSD = 'BTC_USD'
 '''
 
 #INSTRUMENT_SYMBOL = "ltc"
-INSTRUMENT_SYMBOL = "btc"
+INSTRUMENT_SYMBOL = "bch"
 CURRENCY_SYMBOL = "usdt"
-SYMBOL = 'btcusdt'
+SYMBOL = 'bchusdt'
 PRECISION = 4
 
 class HuobiDataApi(object):
