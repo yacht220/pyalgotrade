@@ -9,6 +9,7 @@ import requests
 import urllib2
 import urlparse
 import time
+import sys
 
 # timeout in 5 seconds:
 TIMEOUT = 60
@@ -64,6 +65,7 @@ def http_get_request(url, params, add_to_headers=None):
             time.sleep(1)
             retry += 1
             print("httpGet failed, detail is:%s, retry %s" % (e, retry))
+            sys.stdout.flush()
             if retry == 100:
                 return {"status":"fail","msg":e}
 
@@ -90,6 +92,7 @@ def http_post_request(url, params, add_to_headers=None):
             time.sleep(1)
             retry += 1
             print("httpPost failed, detail is:%s, retry %s" % (e, retry))
+            sys.stdout.flush()
             if retry == 100:
                 return {"status":"fail","msg":e}
 

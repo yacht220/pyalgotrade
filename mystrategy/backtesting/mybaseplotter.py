@@ -25,15 +25,26 @@ brk = mybroker.MyBroker(10000, feed, commission)
 
 #signal = mysignal.MyPriceSmaCrossOverSignal()
 #signal = mysignal.MyPriceSmaUpDownSignal()
-signal = mysignal.MySmaCrossOverUpDownSignal()
+#signal = mysignal.MySmaCrossOverUpDownSignal()
 #signal = mysignal.MyEmaCrossOverUpDownSignal()
 #signal = mysignal.MyQuickAdvanceAndDeclineSignal()
 #signal = mysignal.MySmaUpAndDownSignal()
 #signal = mysignal.MyMacdCrossOverUpDownSignal()
 #signal = mysignal.MySmaCrossOverUpDownSignalStopLossStopProfit()
+#signal = mysignal.MyMultiSmaCrossOverUpDownSignal()
+signal = mysignal.MyPriceSmaDeviationSignal()
 
+smaPeriodFast = 48
+smaPeriodSlow = 96
+smaPeriodA = None
+smaPeriodB = None
+smaPeriodC = None
+emaPeriodFast = None
+emaPeriodSlow = None
+emaPeriodSignal = None
 # Evaluate the strategy with the feed's bars.
-myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, huobiapi.INSTRUMENT_SYMBOL, signal, 48, 96, 12, 26, 9)
+myStrategy = mybasestrategy.MyBaseStrategy(feed, brk, huobiapi.INSTRUMENT_SYMBOL, signal, smaPeriodFast, 
+	smaPeriodSlow, smaPeriodA, smaPeriodB, smaPeriodC, emaPeriodFast, emaPeriodSlow, emaPeriodSignal)
 
 # Attach a returns analyzers to the strategy.
 returnsAnalyzer = returns.Returns()
@@ -41,9 +52,26 @@ myStrategy.attachAnalyzer(returnsAnalyzer)
 # Attach the plotter to the strategy.
 plt = plotter.StrategyPlotter(myStrategy)
 # Include the SMA in the instrument's subplot to get it displayed along with the closing prices.
-plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMAFast", myStrategy.getSMAFast())
+if myStrategy.getSMAFast() is not None:
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMAFast", myStrategy.getSMAFast())
+
 if myStrategy.getSMASlow() is not None:
 	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMASlow", myStrategy.getSMASlow())
+
+if myStrategy.getSMAA() is not None:
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMAA", myStrategy.getSMAA())
+
+if myStrategy.getSMAB() is not None:
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMAB", myStrategy.getSMAB())
+
+if myStrategy.getSMAC() is not None:
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("SMAC", myStrategy.getSMAC())
+
+if myStrategy.getEMAFast() is not None:
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("EMAFast", myStrategy.getEMAFast())
+
+if myStrategy.getEMASlow() is not None:
+	plt.getInstrumentSubplot(huobiapi.INSTRUMENT_SYMBOL).addDataSeries("EMASlow", myStrategy.getEMASlow())
 
 # Plot the simple returns on each bar.
 plt.getOrCreateSubplot("returns").addDataSeries("Simple returns", returnsAnalyzer.getReturns())

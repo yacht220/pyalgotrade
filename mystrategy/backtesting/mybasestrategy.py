@@ -8,8 +8,9 @@ import pdb
 from mystrategy.common import myutils
 
 class MyBaseStrategy(strategy.BacktestingStrategy):
-	def __init__(self, feed, broker, instrument, signal, smaPeriodFast = None, 
-		         smaPeriodSlow = None, emaPeriodFast = None, emaPeriodSlow = None,
+	def __init__(self, feed, broker, instrument, signal, smaPeriodFast = None,
+		         smaPeriodSlow = None, smaPeriodA = None, smaPeriodB = None,
+		         smaPeriodC = None, emaPeriodFast = None, emaPeriodSlow = None,
 		         emaPeriodSignal = None):
 		self.__instrument = instrument
 		self.__position = None
@@ -25,6 +26,15 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		if smaPeriodSlow is not None:
 			self.__signal.smaSlow = ma.SMA(self.__signal.prices, smaPeriodSlow)
 
+		if smaPeriodA is not None:
+			self.__signal.smaA = ma.SMA(self.__signal.prices, smaPeriodA)
+
+		if smaPeriodB is not None:
+			self.__signal.smaB = ma.SMA(self.__signal.prices, smaPeriodB)
+
+		if smaPeriodC is not None:
+			self.__signal.smaC = ma.SMA(self.__signal.prices, smaPeriodC)
+
 		if emaPeriodFast is not None:
 			self.__signal.emaFast = ma.EMA(self.__signal.prices, emaPeriodFast)
 			
@@ -39,6 +49,15 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 
 	def getSMASlow(self):
 		return self.__signal.smaSlow
+
+	def getSMAA(self):
+		return self.__signal.smaA
+
+	def getSMAB(self):
+		return self.__signal.smaB
+
+	def getSMAC(self):
+		return self.__signal.smaC
 
 	def getEMAFast(self):
 		return self.__signal.emaFast

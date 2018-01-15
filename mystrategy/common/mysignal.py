@@ -11,6 +11,9 @@ class MyBaseSignal(object):
         self.bar = None
         self.smaFast = None
         self.smaSlow = None
+        self.smaA = None
+        self.smaB = None
+        self.smaC = None
         self.emaFast = None
         self.emaSlow = None
         self.macd = None
@@ -128,7 +131,7 @@ class MyBaseSignal(object):
 
 class MyPriceSmaCrossOverSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MyPriceSmaCrossOverSignal, self).__init__()
 
     def enterLongSignal(self):
         return cross.cross_above(self.prices, self.smaFast) > 0
@@ -138,7 +141,7 @@ class MyPriceSmaCrossOverSignal(MyBaseSignal):
 
 class MyPriceSmaUpDownSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MyPriceSmaUpDownSignal, self).__init__()
 
     def enterLongSignal(self):
         if self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
@@ -154,7 +157,7 @@ class MyPriceSmaUpDownSignal(MyBaseSignal):
 
 class MySmaCrossOverUpDownSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MySmaCrossOverUpDownSignal, self).__init__()
 
     def enterLongSignal(self):
         if self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
@@ -170,7 +173,7 @@ class MySmaCrossOverUpDownSignal(MyBaseSignal):
 
 class MyQuickAdvanceAndDeclineSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MyQuickAdvanceAndDeclineSignal, self).__init__()
 
     def enterLongSignal(self):
         if len(self.prices) <= 1:
@@ -198,7 +201,7 @@ class MyQuickAdvanceAndDeclineSignal(MyBaseSignal):
 
 class MySmaUpAndDownSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MySmaUpAndDownSignal, self).__init__()
 
     def enterLongSignal(self):
         if self.smaFast is None or self.smaFast[-1] is None:
@@ -214,7 +217,7 @@ class MySmaUpAndDownSignal(MyBaseSignal):
 
 class MyMacdCrossOverUpDownSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MyMacdCrossOverUpDownSignal, self).__init__()
 
     def enterLongSignal(self):
         if self.macd is None or self.macd[-1] is None or self.macd.getSignal() is None or self.macd.getSignal()[-1] is None:
@@ -230,7 +233,7 @@ class MyMacdCrossOverUpDownSignal(MyBaseSignal):
 
 class MyEmaCrossOverUpDownSignal(MyBaseSignal):
     def __init__(self):
-        pass
+        super(MyEmaCrossOverUpDownSignal, self).__init__()
 
     def enterLongSignal(self):
         if self.emaFast is None or self.emaFast[-1] is None or self.emaSlow is None or self.emaSlow[-1] is None:
@@ -246,9 +249,11 @@ class MyEmaCrossOverUpDownSignal(MyBaseSignal):
 
 class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
     def __init__(self):
+        super(MySmaCrossOverUpDownSignalStopLossStopProfit, self).__init__()
         self.__priceStop = False
         self.__buyPrice = None
         self.__highest = 0
+        self.__confirmCount = 3
 
     def enterLongSignal(self):
         if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
@@ -267,17 +272,96 @@ class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
         
         if self.__highest < self.bar.getHigh():
             self.__highest = self.bar.getHigh()
+
         if self.isBelow(self.smaFast, self.smaSlow, 1):
             return True
         elif self.__buyPrice > self.prices[-1]:
             d = (self.__highest - self.prices[-1]) / self.__highest 
-            if d >= 0.035:
-                self.__priceStop = True
-                return True
+            if d >= 0.05:
+                if self.__confirmCount == 0:
+                    self.__priceStop = True
+                    self.__confirmCount = 3
+                    return True
+                else:
+                    self.__confirmCount -= 1
+            elif self.__confirmCount != 3:
+                self.__confirmCount = 3
+
         elif self.__buyPrice < self.prices[-1]:
             d = (self.prices[-1] - self.__buyPrice) / self.__buyPrice
-            if d >= 0.025:
-                self.__priceStop = True
-                return True
-        else:
+            if d >= 0.05:
+                if self.__confirmCount == 0:
+                    self.__priceStop = True
+                    self.__confirmCount = 3
+                    return True
+                else:
+                    self.__confirmCount -= 1
+            elif self.__confirmCount != 3:
+                self.__confirmCount = 3
+        
+        return False
+
+class MyMultiSmaCrossOverUpDownSignal(MyBaseSignal):
+    def __init__(self):
+        super(MyMultiSmaCrossOverUpDownSignal, self).__init__()
+
+    def enterLongSignal(self):
+        if self.smaA is None or self.smaA[-1] is None or \
+            self.smaB is None or self.smaB[-1] is None or \
+            self.smaC is None or self.smaC[-1] is None:
             return False
+
+        return self.isOver(self.smaA, self.smaB, 1) and \
+            self.isOver(self.smaB, self.smaC, 1) and \
+            self.isUp(self.smaA, 2) and \
+            self.isUp(self.smaB, 2) and \
+            self.isUp(self.smaC, 2)
+
+    def exitLongSignal(self):
+        if self.smaA is None or self.smaA[-1] is None or \
+            self.smaB is None or self.smaB[-1] is None or \
+            self.smaC is None or self.smaC[-1] is None:
+            return False
+        
+        return self.isBelow(self.smaA, self.smaB, 1)
+
+class MyPriceSmaDeviationSignal(MyBaseSignal):
+    def __init__(self):
+        self.__stopBuy = False
+        super(MyPriceSmaDeviationSignal, self).__init__()
+
+    def enterLongSignal(self):
+        if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
+            return False
+
+        if self.isBelow(self.smaFast, self.smaSlow, 1):
+            self.__stopBuy = False
+
+        if self.__stopBuy is False and self.isOver(self.smaFast, self.smaSlow, 1) and \
+            self.isUp(self.smaFast, 2) and \
+            self.isUp(self.smaSlow, 2):
+                return True
+            #self.isOver(self.prices, self.smaFast, 1):
+            #    d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
+            #    if d <= 0.01:
+            #        return True
+
+        return False
+
+    def exitLongSignal(self):
+        if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
+            return False
+
+        if self.isBelow(self.smaFast, self.smaSlow, 1):
+            return True
+        #elif self.isBelow(self.prices, self.smaFast, 1):
+        #    d = (self.smaFast[-1] - self.prices[-1]) / self.smaFast[-1]
+        #    if d >= 0.01:
+        #        return True
+        elif self.isOver(self.prices, self.smaFast, 1):
+            d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
+            if d >= 0.1:
+                self.__stopBuy = True
+                return True
+
+        return False
