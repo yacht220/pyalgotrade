@@ -119,6 +119,8 @@ def main():
         signal = mysignal.MyPriceSmaDeviationSignal(common.buyPrice)
     else:
         signal = mysignal.MyPriceSmaDeviationSignal()
+
+    #signal = mysignal.MySmaCrossOverUpDownSignal()
     strat = MyLiveStrategy(barFeed, brk, signal, 48, 96)
     
     strat.run()
