@@ -169,7 +169,7 @@ class MySmaCrossOverUpDownSignal(MyBaseSignal):
         if self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
             return False
         
-        return self.isBelow(self.smaFast, self.smaSlow, 1)#cross.cross_below(self.smaFast, self.smaSlow) > 0# or self.isDown(self.smaFast, 5)
+        return self.isBelow(self.smaFast, self.smaSlow, 1)# or self.isDown(self.smaFast, 2) and self.isDown(self.smaSlow, 2) #cross.cross_below(self.smaFast, self.smaSlow) > 0
 
 class MyQuickAdvanceAndDeclineSignal(MyBaseSignal):
     def __init__(self):
@@ -248,12 +248,13 @@ class MyEmaCrossOverUpDownSignal(MyBaseSignal):
         #return emaFast[-1] < emaSlow[-1] and smaIsDown(emaFast, 2) and smaIsDown(emaSlow, 2)
 
 class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
+    CONFIRM_COUNT = 0
     def __init__(self):
         super(MySmaCrossOverUpDownSignalStopLossStopProfit, self).__init__()
         self.__priceStop = False
         self.__buyPrice = None
         self.__highest = 0
-        self.__confirmCount = 3
+        self.__confirmCount = self.CONFIRM_COUNT
 
     def enterLongSignal(self):
         if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
@@ -277,27 +278,27 @@ class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
             return True
         elif self.__buyPrice > self.prices[-1]:
             d = (self.__highest - self.prices[-1]) / self.__highest 
-            if d >= 0.05:
+            if d >= 0.1:
                 if self.__confirmCount == 0:
                     self.__priceStop = True
-                    self.__confirmCount = 3
+                    self.__confirmCount = self.CONFIRM_COUNT
                     return True
                 else:
                     self.__confirmCount -= 1
-            elif self.__confirmCount != 3:
-                self.__confirmCount = 3
+            elif self.__confirmCount != self.CONFIRM_COUNT:
+                self.__confirmCount = self.CONFIRM_COUNT
 
         elif self.__buyPrice < self.prices[-1]:
             d = (self.prices[-1] - self.__buyPrice) / self.__buyPrice
             if d >= 0.05:
                 if self.__confirmCount == 0:
                     self.__priceStop = True
-                    self.__confirmCount = 3
+                    self.__confirmCount = self.CONFIRM_COUNT
                     return True
                 else:
                     self.__confirmCount -= 1
-            elif self.__confirmCount != 3:
-                self.__confirmCount = 3
+            elif self.__confirmCount != self.CONFIRM_COUNT:
+                self.__confirmCount = self.CONFIRM_COUNT
         
         return False
 
@@ -326,25 +327,38 @@ class MyMultiSmaCrossOverUpDownSignal(MyBaseSignal):
         return self.isBelow(self.smaA, self.smaB, 1)
 
 class MyPriceSmaDeviationSignal(MyBaseSignal):
-    def __init__(self):
+    SELL_COUNT_A = 1
+    SELL_COUNT_B = 1
+    SELL_WAIT_BUY_COUNT = 4
+    def __init__(self, buyPrice = None):
         self.__stopBuy = False
+        self.__buyPrice = buyPrice
+        self.__sellCountA = self.SELL_COUNT_A
+        self.__sellCountB = self.SELL_COUNT_B
+        self.__waitBuyCount = self.SELL_WAIT_BUY_COUNT
         super(MyPriceSmaDeviationSignal, self).__init__()
 
     def enterLongSignal(self):
         if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
             return False
 
-        if self.isBelow(self.smaFast, self.smaSlow, 1):
+        if self.isBelow(self.smaFast, self.smaSlow, 1):# or self.__waitBuyCount == 0:
             self.__stopBuy = False
+            self.__sellCountA = self.SELL_COUNT_A
+            self.__sellCountB = self.SELL_COUNT_B
+            self.__waitBuyCount = self.SELL_WAIT_BUY_COUNT
+        else:
+            self.__waitBuyCount -= 1
 
-        if self.__stopBuy is False and self.isOver(self.smaFast, self.smaSlow, 1) and \
+        if self.isOver(self.smaFast, self.smaSlow, 1) and \
             self.isUp(self.smaFast, 2) and \
-            self.isUp(self.smaSlow, 2):
-                return True
-            #self.isOver(self.prices, self.smaFast, 1):
-            #    d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
-            #    if d <= 0.01:
-            #        return True
+            self.isUp(self.smaSlow, 2) and \
+            self.isOver(self.prices, self.smaFast, 1) and \
+            self.__stopBuy is False:
+                d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
+                if d <= 0.01:
+                    self.__buyPrice = self.prices[-1]
+                    return True
 
         return False
 
@@ -354,14 +368,26 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
 
         if self.isBelow(self.smaFast, self.smaSlow, 1):
             return True
-        #elif self.isBelow(self.prices, self.smaFast, 1):
-        #    d = (self.smaFast[-1] - self.prices[-1]) / self.smaFast[-1]
-        #    if d >= 0.01:
-        #        return True
+        elif self.isBelow(self.prices, self.smaSlow, 1):# and self.__sellCountA != self.SELL_COUNT_A:
+            d = (self.smaSlow[-1] - self.prices[-1]) / self.smaSlow[-1]
+            if d >= 0.05:
+                self.__sellCountB -= 1
+                if self.__sellCountB== 0:
+                    return True
+        elif self.prices[-1] > self.__buyPrice:
+            d = (self.prices[-1] - self.__buyPrice) / self.__buyPrice
+            if d >= 0.1:            
+                self.__sellCountA -= 1
+                if self.__sellCountA == 0:
+                    self.__stopBuy = True
+
+                return True
         elif self.isOver(self.prices, self.smaFast, 1):
             d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
             if d >= 0.1:
-                self.__stopBuy = True
+                self.__sellCountA -= 1
+                if self.__sellCountA == 0:
+                    self.__stopBuy = True
                 return True
 
         return False
