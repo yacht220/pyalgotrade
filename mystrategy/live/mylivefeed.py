@@ -112,6 +112,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     """
 
     KLINE_PERIOD = '15min'
+    REFRESH_WAIT_SEC = 5
 
     def __init__(self, maxLen=None):
         super(LiveTradeFeed, self).__init__(bar.Frequency.MINUTE, maxLen)
@@ -146,7 +147,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
         #curdatetime = self.__getTradeDateTime(bar[1][0])
         curdatetime = datetime.datetime.fromtimestamp(bar[0]['id'])
         if (curdatetime == self.__prevTradeDateTime):
-                time.sleep(60)
+                time.sleep(LiveTradeFeed.REFRESH_WAIT_SEC)
                 return False
 
         #prevdatetime = self.__getTradeDateTime(bar[0][0]) 
