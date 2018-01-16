@@ -1,6 +1,7 @@
 import abc
 from pyalgotrade.technical import cross
 from mystrategy.common import mylogger
+from mystrategy import common
 
 mysignallogger = mylogger.getMyLogger("mysingal")
 
@@ -256,6 +257,10 @@ class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
         self.__highest = 0
         self.__confirmCount = self.CONFIRM_COUNT
 
+    def setBuyPrice(self, price):
+        assert(price is not None)
+        self.__buyPrice = price
+
     def enterLongSignal(self):
         if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
             return False
@@ -330,13 +335,17 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
     SELL_COUNT_A = 1
     SELL_COUNT_B = 1
     SELL_WAIT_BUY_COUNT = 4
-    def __init__(self, buyPrice = None):
+    def __init__(self):
         self.__stopBuy = False
-        self.__buyPrice = buyPrice
+        self.__buyPrice = None
         self.__sellCountA = self.SELL_COUNT_A
         self.__sellCountB = self.SELL_COUNT_B
         self.__waitBuyCount = self.SELL_WAIT_BUY_COUNT
         super(MyPriceSmaDeviationSignal, self).__init__()
+
+    def setBuyPrice(self, price):
+        assert(price is not None)
+        self.__buyPrice = price
 
     def enterLongSignal(self):
         if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
@@ -357,7 +366,8 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
             self.__stopBuy is False:
                 d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
                 if d <= 0.01:
-                    self.__buyPrice = self.prices[-1]
+                    if common.isBacktesting is True:
+                        self.__buyPrice = self.prices[-1]
                     return True
 
         return False
@@ -376,11 +386,10 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
                     return True
         elif self.prices[-1] > self.__buyPrice:
             d = (self.prices[-1] - self.__buyPrice) / self.__buyPrice
-            if d >= 0.1:            
+            if d >= 0.08:            
                 self.__sellCountA -= 1
                 if self.__sellCountA == 0:
                     self.__stopBuy = True
-
                 return True
         elif self.isOver(self.prices, self.smaFast, 1):
             d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
