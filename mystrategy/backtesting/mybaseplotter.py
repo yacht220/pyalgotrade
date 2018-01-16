@@ -20,7 +20,7 @@ kline = huobi.getKline(huobiapi.SYMBOL, '15min', 2000)['data']
 feed = myfeed.Feed()
 feed.addBarsFromJson(huobiapi.INSTRUMENT_SYMBOL, kline)
 
-commission = backtesting.TradePercentage(0.002)
+commission = backtesting.TradePercentage(0.003)
 brk = mybroker.MyBroker(10000, feed, commission)
 
 #signal = mysignal.MyPriceSmaCrossOverSignal()

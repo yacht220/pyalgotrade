@@ -382,7 +382,13 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
             d = (self.smaSlow[-1] - self.prices[-1]) / self.smaSlow[-1]
             if d >= 0.05:
                 self.__sellCountB -= 1
-                if self.__sellCountB== 0:
+                if self.__sellCountB == 0:
+                    return True
+        elif self.prices[-1] < self.__buyPrice:
+            d = (self.__buyPrice - self.prices[-1]) / self.__buyPrice
+            if d >= 0.06:
+                self.__sellCountB -= 1
+                if self.__sellCountB == 0:
                     return True
         elif self.prices[-1] > self.__buyPrice:
             d = (self.prices[-1] - self.__buyPrice) / self.__buyPrice
