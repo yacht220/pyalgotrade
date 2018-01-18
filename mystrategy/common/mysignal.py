@@ -363,6 +363,7 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
             self.isUp(self.smaFast, 2) and \
             self.isUp(self.smaSlow, 2) and \
             self.isOver(self.prices, self.smaFast, 1) and \
+            self.isUp(self.prices, 2) and \
             self.__stopBuy is False:
                 d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
                 if d <= 0.01:
