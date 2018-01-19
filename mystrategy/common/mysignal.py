@@ -122,6 +122,9 @@ class MyBaseSignal(object):
 
         return True
 
+    def setBuyPrice(self, price):
+        pass
+    
     @abc.abstractmethod
     def enterLongSignal(self):
         raise NotImplementedError()
@@ -268,7 +271,6 @@ class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
         if self.__priceStop is True and self.isBelow(self.smaFast, self.smaSlow, 1):
             self.__priceStop = False
         if self.__priceStop is False and self.isOver(self.smaFast, self.smaSlow, 1) and self.isUp(self.smaFast, 2) and self.isUp(self.smaSlow, 2):
-            self.__buyPrice = self.prices[-1]
             self.__highest = 0
             return True
 
@@ -367,8 +369,6 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
             self.__stopBuy is False:
                 d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
                 if d <= 0.01:
-                    if common.isBacktesting is True:
-                        self.__buyPrice = self.prices[-1]
                     return True
 
         return False
@@ -393,7 +393,7 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
                     return True
         elif self.prices[-1] > self.__buyPrice:
             d = (self.prices[-1] - self.__buyPrice) / self.__buyPrice
-            if d >= 0.08:            
+            if d >= 0.05:            
                 self.__sellCountA -= 1
                 if self.__sellCountA == 0:
                     self.__stopBuy = True

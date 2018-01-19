@@ -68,6 +68,7 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 	def onEnterOk(self, position):
 		#pdb.set_trace()
 		execInfo = position.getEntryOrder().getExecutionInfo()
+		self.__signal.setBuyPrice(execInfo.getPrice())
 		self.info("BUY at $%.2f" % (execInfo.getPrice()))
 
 	def onEnterCanceled(self, position): 

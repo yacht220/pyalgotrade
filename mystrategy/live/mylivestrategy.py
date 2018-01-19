@@ -91,9 +91,8 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 if common.skipBuy is True:
                     shares = myutils.truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION)
                     common.fakeShares = shares
-                    if isinstance(self.__signal, mysignal.MyPriceSmaDeviationSignal):
-                        self.__signal.setBuyPrice(common.buyPrice)
-                elif isinstance(self.__signal, mysignal.MyPriceSmaDeviationSignal):
+                    self.__signal.setBuyPrice(common.buyPrice)
+                else:
                     self.__signal.setBuyPrice(self.__ask)
                 self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__ask, huobiapi.CURRENCY_SYMBOL))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
