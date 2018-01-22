@@ -16,7 +16,6 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def __init__(self, feed, brk, signal, smaPeriodFast = None, smaPeriodSlow = None, 
                  emaPeriodFast = None, emaPeriodSlow = None, emaPeriodSignal = None):
         super(MyLiveStrategy, self).__init__(feed, brk)
-        self.__emailServer = myemail.MyEmailServer()
         self.__bid = None
         self.__ask = None
         self.__position = None
@@ -52,24 +51,24 @@ class MyLiveStrategy(strategy.BaseStrategy):
     def onEnterOk(self, position):
         filledPrice = position.getEntryOrder().getExecutionInfo().getPrice()
         self.info("Position opened at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL)) 
-        self.__emailServer.sendEmail("Position opened at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL))
+        myemail.sendEmail("Position opened at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL))
 
     def onEnterCanceled(self, position):
         self.info("Position entry canceled")
         self.__position = None
-        self.__emailServer.sendEmail("Position entry canceled")
+        myemail.sendEmail("Position entry canceled")
 
     def onExitOk(self, position):
         self.__position = None
         filledPrice = position.getExitOrder().getExecutionInfo().getPrice()
         self.info("Position closed at %s %s" % (filledPrice, huobiapi.CURRENCY_SYMBOL))
-        self.__emailServer.sendEmail("Position closed at %s %s" %(filledPrice, huobiapi.CURRENCY_SYMBOL))
+        myemail.sendEmail("Position closed at %s %s" %(filledPrice, huobiapi.CURRENCY_SYMBOL))
 
     def onExitCanceled(self, position):
         self.info("Position exit canceled")
         # If the exit was canceled, re-submit it.
         self.__position.exitLimit(self.__bid)
-        self.__emailServer.sendEmail("Position exit canceled")
+        myemail.sendEmail("Position exit canceled")
 
     def onBars(self, bars):
         #pdb.set_trace()
@@ -79,7 +78,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
             self.info("Bar feed is in init")
             return
 
-        self.__emailServer.sendEmail("Everything is OK, current price %s %s" % (self.__signal.bar.getClose(), huobiapi.CURRENCY_SYMBOL))
+        myemail.sendEmail("Everything is OK, current price %s %s" % (self.__signal.bar.getClose(), huobiapi.CURRENCY_SYMBOL))
 
         self.getBroker().refreshAccountBalance()
         #self.info("Current portfolio value %.2f CNY" % self.getResult())
@@ -97,7 +96,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                     self.__signal.setBuyPrice(self.__ask)
                 self.info("Entry signal. Buy %s shares at %s %s" % (shares, self.__ask, huobiapi.CURRENCY_SYMBOL))
                 self.__position = self.enterLongLimit(self.__instrument, self.__ask, shares, True)
-                self.__emailServer.sendEmail("Entry signal")
+                myemail.sendEmail("Entry signal")
         # Check if we have to exit the position.
         elif not self.__position.exitActive():
             if self.__signal.exitLongSignal():
@@ -106,7 +105,7 @@ class MyLiveStrategy(strategy.BaseStrategy):
                 self.__position.setShares(myutils.truncFloat(self.getBroker().getShares(self.__instrument), huobiapi.PRECISION))
                 self.info("Exit signal. Sell %s shares at %s %s" % (self.__position.getShares(), self.__bid, huobiapi.CURRENCY_SYMBOL))
                 self.__position.exitLimit(self.__bid)
-                self.__emailServer.sendEmail("Exit signal")
+                myemail.sendEmail("Exit signal")
                 common.skipBuy = False
 
 def main():
