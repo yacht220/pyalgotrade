@@ -59,12 +59,16 @@ def http_get_request(url, params, add_to_headers=None):
             if response.status_code == 200:
                 return response.json()
             else:
-                return response.json()
-                #return {"status":"fail"}
+                time.sleep(1)
+                retry += 1
+                print("httpGet bad response status:", response.status_code, "response:", response.json())
+                sys.stdout.flush()
+                if retry == 100:
+                    return {"status":"fail"}
         except Exception as e:
             time.sleep(1)
             retry += 1
-            print("httpGet failed, detail is:%s, retry %s" % (e, retry))
+            print("httpGet failed, detail is: %s, retry %s" % (e, retry))
             sys.stdout.flush()
             if retry == 100:
                 return {"status":"fail","msg":e}
@@ -87,11 +91,16 @@ def http_post_request(url, params, add_to_headers=None):
             if response.status_code == 200:
                 return response.json()
             else:
-                return response.json()
+                time.sleep(1)
+                retry += 1
+                print("httpPost bad response status:", response.status_code, "response:", response.json())
+                sys.stdout.flush()
+                if retry == 100:
+                    return {"status":"fail"}
         except Exception as e:
             time.sleep(1)
             retry += 1
-            print("httpPost failed, detail is:%s, retry %s" % (e, retry))
+            print("httpPost failed, detail is: %s, retry %s" % (e, retry))
             sys.stdout.flush()
             if retry == 100:
                 return {"status":"fail","msg":e}
