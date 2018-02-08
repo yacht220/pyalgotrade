@@ -42,6 +42,7 @@ ACCOUNT_ID = None
 
 
 MARKET_URL = TRADE_URL = "https://api.huobi.pro"
+#MARKET_URL = TRADE_URL = "https://api.huobipro.com"
 
 def http_get_request(url, params, add_to_headers=None):
     headers = {

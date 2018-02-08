@@ -2,10 +2,12 @@ from pyalgotrade import strategy
 from pyalgotrade.technical import ma
 from pyalgotrade.technical import cross
 from pyalgotrade.technical import macd
+from pyalgotrade import strategy
 import mybroker
 from mystrategy.huobi import huobiapi
 import pdb
 from mystrategy.common import myutils
+from mystrategy import common
 
 class MyBaseStrategy(strategy.BacktestingStrategy):
 	def __init__(self, feed, broker, instrument, signal, smaPeriodFast = None,
@@ -68,15 +70,23 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 	def onEnterOk(self, position):
 		#pdb.set_trace()
 		execInfo = position.getEntryOrder().getExecutionInfo()
-		self.__signal.setBuyPrice(execInfo.getPrice())
-		self.info("BUY at $%.2f" % (execInfo.getPrice()))
+		if isinstance(self.__position, strategy.position.LongPosition):
+			self.__signal.setBuyPrice(execInfo.getPrice())
+			self.info("Long position BUY at $%.2f" % (execInfo.getPrice()))
+		elif isinstance(self.__position, strategy.position.ShortPosition):
+			self.__signal.setSellPrice(execInfo.getPrice())
+			self.info("Short position SELL at $%.2f" % (execInfo.getPrice()))
 
 	def onEnterCanceled(self, position): 
 		self.__position = None
 
 	def onExitOk(self, position):
 		execInfo = position.getExitOrder().getExecutionInfo()
-		self.info("SELL at $%.2f" % (execInfo.getPrice()))
+		if isinstance(self.__position, strategy.position.LongPosition):
+			self.info("Long position SELL at $%.2f" % (execInfo.getPrice()))
+		elif isinstance(self.__position, strategy.position.ShortPosition):
+			self.info("Short position BUY at $%.2f" % (execInfo.getPrice()))
+			
 		self.__position = None
 
 	def onExitCanceled(self, position):
@@ -90,9 +100,13 @@ class MyBaseStrategy(strategy.BacktestingStrategy):
 		if self.__position is None:
 			if self.__signal.enterLongSignal():
 				shares = myutils.truncFloat(float(self.getBroker().getCash() * 0.9 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)
-				 # Enter a buy market order. The order is good till canceled.
+				# Enter a buy market order. The order is good till canceled.
 				self.__position = self.enterLong(self.__instrument, shares, True)
+			elif common.shortEnabled is True and self.__signal.enterShortSignal():
+				shares = myutils.truncFloat(float(self.getBroker().getCash() * 0.9 / bars[self.__instrument].getPrice()), huobiapi.PRECISION)		
+				self.__position = self.enterShort(self.__instrument, shares, True)
 		# Check if we have to exit the position.
 		elif not self.__position.exitActive():
-			if self.__signal.exitLongSignal():
+			if isinstance(self.__position, strategy.position.LongPosition) and self.__signal.exitLongSignal() or \
+			isinstance(self.__position, strategy.position.ShortPosition) and self.__signal.exitShortSignal():
 				self.__position.exitMarket()

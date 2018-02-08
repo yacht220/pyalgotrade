@@ -313,6 +313,105 @@ class HuobiTradeApi(object):
         optional = {'market': market}
         return self._processRequest(method, params, optional)'''
 
+    def send_margin_order(self, amount, source, symbol, _type, price=0):
+        try:
+            accounts = get_accounts()
+            acct_id = accounts['data'][0]['id']
+        except BaseException as e:
+            print 'get acct_id error.%s' % e
+            acct_id = ACCOUNT_ID
+
+        params = {"account-id": acct_id,
+                  "amount": amount,
+                  "symbol": symbol,
+                  "type": _type,
+                  "source": 'margin-api'}
+        if price:
+            params["price"] = price
+
+        url = '/v1/order/orders/place'
+        return api_key_post(params, url)
+
+    def exchange_to_margin(self, symbol,currency,amount):
+        """
+        :param amount: 
+        :param currency: 
+        :param symbol: 
+        :return: 
+        """
+        params = {"symbol":symbol,
+                  "currency":currency,
+                  "amount":amount}
+
+        url = "/v1/dw/transfer-in/margin"
+        return api_key_post(params,url)
+
+    def margin_to_exchange(self, symbol,currency,amount):
+        """
+        :param amount: 
+        :param currency: 
+        :param symbol: 
+        :return: 
+        """
+        params = {"symbol":symbol,
+                  "currency":currency,
+                  "amount":amount}
+
+        url = "/v1/dw/transfer-out/margin"
+        return api_key_post(params,url)
+
+    def get_margin(self, symbol, currency, amount):
+        """
+        :param amount: 
+        :param currency: 
+        :param symbol: 
+        :return: 
+        """
+        params = {"symbol": symbol,
+                  "currency": currency,
+                  "amount": amount}
+        url = " /v1/margin/orders"
+        return api_key_post(params, url)
+   
+    def repay_margin(self, order_id, amount):
+        """
+        :param order_id: 
+        :param amount: 
+        :return: 
+        """
+        params = {"order-id": order_id,
+                  "amount": amount}
+        url = "/v1/margin/orders/{0}/repay".format(order_id)
+        return api_key_post(params, url)
+
+    def loan_orders(self, symbol, currency, start_date="", end_date="", start="", direct="", size=""):
+        params = {"symbol":symbol,
+                  "currency":currency}
+        if start_date:
+            params["start-date"] = start_date
+        if end_date:
+            params["end-date"] = end_date
+        if start:
+            params["from"] = start
+        if direct and direct in ["prev","next"]:
+            params["direct"] = direct
+        if size:
+            params["size"] = size
+        url = "/v1/margin/loan-orders"
+        return api_key_get(params,url)
+
+    def margin_balance(self, symbol=""):
+        """
+        :param symbol: 
+        :return: 
+        """
+        params = {}
+        url = "/v1/margin/accounts/balance"
+        if symbol:
+            params['symbol'] = symbol
+        
+        return api_key_get(params, url)
+
 '''class HuobiTradeApiFake(object):
     def __init__(self):
         self.__orderIdTmp = None
@@ -421,8 +520,8 @@ class HuobiTradeApi(object):
 # Testing purpose only
 if __name__ == "__main__":
     huobiDataApi = HuobiDataApi()
-    r = huobiDataApi.getKline("bchusdt", "60min")
-    print r
+    #r = huobiDataApi.getKline("bchusdt", "60min")
+    #print r
     '''t = r['data'][0]['id']
     year = datetime.fromtimestamp(t).year
     month = datetime.fromtimestamp(t).month
@@ -444,4 +543,8 @@ if __name__ == "__main__":
         elif  i['currency'] == 'usdt' and i['type'] == 'trade':
             print float(i['balance'])'''
     #print huobiTradeApi.getOrderInfo("448128462")
-    print huobiTradeApi.getOrderInfoDetail("491016215")
+    #print huobiTradeApi.getOrderInfoDetail("491016215")
+    print huobiTradeApi.margin_balance()
+    #print huobiTradeApi.loan_orders("bchusdt", "bch")
+    #print huobiTradeApi.exchange_to_margin("bchusdt", "usdt", "100")
+    #print huobiTradeApi.margin_to_exchange("bchusdt", "usdt", "807.93938122")

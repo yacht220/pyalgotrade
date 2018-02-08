@@ -124,6 +124,9 @@ class MyBaseSignal(object):
 
     def setBuyPrice(self, price):
         pass
+
+    def setSellPrice(self, price):
+        pass
     
     @abc.abstractmethod
     def enterLongSignal(self):
@@ -132,6 +135,12 @@ class MyBaseSignal(object):
     @abc.abstractmethod
     def exitLongSignal(self):
         raise NotImplementedError()
+
+    def enterShortSignal(self):
+        return False
+
+    def exitShortSignal(self):
+        return False
 
 class MyPriceSmaCrossOverSignal(MyBaseSignal):
     def __init__(self):
@@ -253,6 +262,7 @@ class MyEmaCrossOverUpDownSignal(MyBaseSignal):
 
 class MySmaCrossOverUpDownSignalStopLossStopProfit(MyBaseSignal):
     CONFIRM_COUNT = 0
+
     def __init__(self):
         super(MySmaCrossOverUpDownSignalStopLossStopProfit, self).__init__()
         self.__priceStop = False
@@ -334,20 +344,40 @@ class MyMultiSmaCrossOverUpDownSignal(MyBaseSignal):
         return self.isBelow(self.smaA, self.smaB, 1)
 
 class MyPriceSmaDeviationSignal(MyBaseSignal):
+    # Long position
     SELL_COUNT_A = 1
     SELL_COUNT_B = 1
     SELL_WAIT_BUY_COUNT = 4
+
+    # Short position
+    BUY_COUNT_A = 1
+    BUY_COUNT_B = 1
+    BUY_WAIT_SELL_COUNT = 4
+
     def __init__(self):
+        # Long position
         self.__stopBuy = False
         self.__buyPrice = None
         self.__sellCountA = self.SELL_COUNT_A
         self.__sellCountB = self.SELL_COUNT_B
         self.__waitBuyCount = self.SELL_WAIT_BUY_COUNT
+
+        # Short position
+        self.__stopSell = False
+        self.__sellPrice = None
+        self.__buyCountA = self.BUY_COUNT_A
+        self.__buyCountB = self.BUY_COUNT_B
+        self.__waitSellCount = self.BUY_WAIT_SELL_COUNT
+
         super(MyPriceSmaDeviationSignal, self).__init__()
 
     def setBuyPrice(self, price):
         assert(price is not None)
         self.__buyPrice = price
+
+    def setSellPrice(self, price):
+        assert(price is not None)
+        self.__sellPrice = price
 
     def enterLongSignal(self):
         if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
@@ -364,11 +394,11 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
         if self.isOver(self.smaFast, self.smaSlow, 1) and \
             self.isUp(self.smaFast, 2) and \
             self.isUp(self.smaSlow, 2) and \
-            self.isOver(self.prices, self.smaFast, 1) and \
-            self.isUp(self.prices, 2) and \
+            "self.isOver(self.prices, self.smaFast, 1)" and \
+            "self.isUp(self.prices, 2)" and \
             self.__stopBuy is False:
                 d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
-                if d <= 0.01:
+                if abs(d) <= 0.01:
                     return True
 
         return False
@@ -404,6 +434,65 @@ class MyPriceSmaDeviationSignal(MyBaseSignal):
                 self.__sellCountA -= 1
                 if self.__sellCountA == 0:
                     self.__stopBuy = True
+                return True
+
+        return False
+
+    def enterShortSignal(self):
+        if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
+            return False
+
+        if self.isOver(self.smaFast, self.smaSlow, 1):# or self.__waitSellCount == 0:
+            self.__stopSell = False
+            self.__buyCountA = self.BUY_COUNT_A
+            self.__buyCountB = self.BUY_COUNT_B
+            self.__waitSellCount = self.BUY_WAIT_SELL_COUNT
+        else:
+            self.__waitSellCount -= 1
+
+        if self.isBelow(self.smaFast, self.smaSlow, 1) and \
+            self.isDown(self.smaFast, 2) and \
+            self.isDown(self.smaSlow, 2) and \
+            "self.isOver(self.prices, self.smaFast, 1)" and \
+            "self.isUp(self.prices, 2)" and \
+            self.__stopSell is False:
+                d = (self.prices[-1] - self.smaFast[-1]) / self.smaFast[-1]
+                if abs(d) <= 0.01:
+                    return True
+
+        return False
+
+    def exitShortSignal(self):
+        if len(self.prices) <= 1 or self.smaFast is None or self.smaFast[-1] is None or self.smaSlow is None or self.smaSlow[-1] is None:
+            return False
+
+        if self.isOver(self.smaFast, self.smaSlow, 1):
+            return True
+        elif self.isOver(self.prices, self.smaSlow, 1):# and self.__buyCountA != self.BUY_COUNT_A:
+            d = (self.prices[-1]) - self.smaSlow[-1] / self.smaSlow[-1]
+            if d >= 0.05:
+                self.__buyCountB -= 1
+                if self.__buyCountB == 0:
+                    return True
+        elif self.prices[-1] > self.__sellPrice:
+            d = (self.prices[-1] - self.__sellPrice) / self.__sellPrice
+            if d >= 0.06:
+                self.__buyCountB -= 1
+                if self.__buyCountB == 0:
+                    return True
+        elif self.prices[-1] < self.__sellPrice:
+            d = (self.__sellPrice - self.prices[-1]) / self.__sellPrice
+            if d >= 0.05:            
+                self.__buyCountA -= 1
+                if self.__buyCountA == 0:
+                    self.__stopSell = True
+                return True
+        elif self.isBelow(self.prices, self.smaFast, 1):
+            d = (self.smaFast[-1] - self.prices[-1]) / self.smaFast[-1]
+            if d >= 0.1:
+                self.__buyCountA -= 1
+                if self.__buyCountA == 0:
+                    self.__stopSell = True
                 return True
 
         return False

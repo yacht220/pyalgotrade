@@ -1,5 +1,6 @@
 skipBuy = False
 buyPrice = None
 fakeShares = None
-canSendEmail = True
+canSendEmail = False
 isBacktesting = False
+shortEnabled = True
