@@ -112,7 +112,7 @@ class LiveTradeFeed(barfeed.BaseBarFeed):
     """
 
     KLINE_PERIOD = '15min'
-    REFRESH_WAIT_SEC = 5
+    REFRESH_WAIT_SEC = 10
 
     def __init__(self, maxLen=None):
         super(LiveTradeFeed, self).__init__(bar.Frequency.MINUTE, maxLen)

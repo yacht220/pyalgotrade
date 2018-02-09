@@ -3,4 +3,4 @@ buyPrice = None
 fakeShares = None
 canSendEmail = False
 isBacktesting = False
-shortEnabled = True
+shortEnabled = False

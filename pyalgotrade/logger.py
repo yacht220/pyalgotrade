@@ -26,7 +26,7 @@ rootLoggerInitialized = False
 
 log_format = "%(asctime)s %(name)s [%(levelname)s] %(message)s"
 level = logging.INFO
-file_log = 'mylive.log'  # File name
+file_log = None#'mylive.log'  # File name
 console_log = True
 
 
