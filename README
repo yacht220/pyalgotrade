@@ -1,0 +1,1 @@
+When using HUOBI api, please make sure the date and time on the running machine is synced with local time. Otherwise signing process with pub/priv key will get error.
