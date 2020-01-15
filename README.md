@@ -1,3 +1,5 @@
+**THIS REPO IS OBSOLETE**
+
 PyAlgoTrade
 ===========
 
